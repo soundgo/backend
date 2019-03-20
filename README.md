@@ -1,6 +1,6 @@
 ## Welcome to the SoundGo backend repository!
 
-This wiki contains the code of the SoundGo backend.
+This repository contains the code of the SoundGo backend.
 
 ![SoundGo Icon](https://avatars0.githubusercontent.com/u/48528371?s=400&u=ea000b2e00965f5c1b9efbdd581748d1bead9db7&v=4)
 
