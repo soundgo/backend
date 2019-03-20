@@ -9,7 +9,7 @@ This repository contains the code of the SoundGo backend.
                                     **** COPYRIGHT NOTICE ****
                                     **************************
                             
-                This repository does no include a license in a premeditated way. This
+                This repository does not include a license in a premeditated way. This
                 means that only the users added as contributors in this repository and
                 the members of the SoundGo organization have the right to maintain, mo-
                 dify, reproduce, distribute, redistribute or create derivate works of
