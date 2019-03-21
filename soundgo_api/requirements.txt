@@ -2,6 +2,7 @@ django==2.1.7
 djangorestframework==3.9.2
 markdown==3.0.1
 django-filter==2.1.0
-psycopg2==2.7.7
+psycopg2-binary==2.7.7
 djangorestframework_simplejwt==4.1.0
 cloudinary==1.15.0
+requests==2.21.0
