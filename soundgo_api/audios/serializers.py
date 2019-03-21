@@ -13,7 +13,7 @@ from .models import Site
 class AudioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Audio
-        fields = ('latitude', 'id', 'longitude', 'numberReproductions', 'path', 'isInappropriate', 'timestampCreation', 'timestampFinish', 'category', 'site', 'tags')
+        fields = ('id', 'latitude', 'longitude', 'numberReproductions', 'path', 'isInappropriate', 'timestampCreation', 'timestampFinish', 'category', 'site', 'tags')
 
 
 
@@ -21,26 +21,30 @@ class AudioSerializer(serializers.ModelSerializer):
 class AdvertisementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Advertisement
-        fields =  ('latitude', 'id', 'longitude', 'numberReproductions', 'path', 'maxPriceToPay', 'radius', 'isActive', ' isDelete')
+        fields = ('id', 'latitude', 'longitude', 'numberReproductions', 'path', 'maxPriceToPay', 'radius', 'isActive', ' isDelete')
 
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('name', 'maxTimeRecord', 'minDurationMap')
+        fields = ('id', 'name', 'maxTimeRecord', 'minDurationMap')
+
+
 
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('name')
+        fields = '__all__'
 
 
 class SiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Site
-        fields = ('latitude', 'longitude', 'name', 'description')
+        fields = ('id', 'latitude', 'longitude', 'name', 'description')
+
+
 
 
