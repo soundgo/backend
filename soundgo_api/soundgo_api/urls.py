@@ -16,8 +16,12 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 from django.urls import include
+from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'audios/', include('audios.urls')),
+    url(r'^api/token/verify/$', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
+    url(r'^api/token/$', jwt_views.TokenObtainSlidingView.as_view(), name='token_obtain'),
+    url(r'^api/token/refresh/$', jwt_views.TokenRefreshSlidingView.as_view(), name='token_refresh'),
 ]
