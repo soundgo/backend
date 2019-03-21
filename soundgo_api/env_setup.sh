@@ -7,8 +7,6 @@ echo -e "\n<<<< Installing requirements >>>>\n"
 
 pip3 install -r requirements.txt
 
-cd soundgo_api
-
 ###################### MAKE MIGRATIONS #####################
 
 echo -e "\n<<<< Making migrations >>>>\n"

@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'audios',
+    'records',
+    'sites',
+    'tags',
 ]
 
 REST_FRAMEWORK = {

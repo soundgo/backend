@@ -21,8 +21,17 @@ from django.urls import path
 
 
 urlpatterns = [
+    # ADMIN SITE
     path('admin/', admin.site.urls),
-    path('audios/', include('audios.urls')),
+    # ACCOUNTS
+    path('accounts/', include('accounts.urls')),
+    # RECORDS
+    path('records/', include('records.urls')),
+    # SITES
+    path('sites/', include('sites.urls')),
+    # TAGS
+    path('tags/', include('tags.urls')),
+    # JWT
     path('api/token/verify/', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
     path('api/token/', jwt_views.TokenObtainSlidingView.as_view(), name='token_obtain'),
     path('api/token/refresh/', jwt_views.TokenRefreshSlidingView.as_view(), name='token_refresh'),
