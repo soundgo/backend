@@ -18,7 +18,7 @@ class AdvertisementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Advertisement
         fields = ('id', 'latitude', 'longitude', 'numberReproductions', 'path', 'maxPriceToPay', 'radius', 'isActive',
-                  ' isDelete')
+                  'isDelete')
 
 
 class CategorySerializer(serializers.ModelSerializer):
