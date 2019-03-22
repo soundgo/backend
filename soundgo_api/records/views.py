@@ -11,6 +11,10 @@ from datetime import timedelta
 from datetime import datetime
 from django.db import transaction
 
+from requests import post, put, delete
+from requests.exceptions import RequestException
+import schedule
+import time
 
 
 class JSONResponse(HttpResponse):
@@ -98,13 +102,14 @@ def audio_create(request):
         data = JSONParser().parse(request)
 
         #TODO coger el base 64 y guardar , meter en data['path'] la url que retorne
-        #TODO guardar en mapbox el audio
+
 
         data = pruned_serializer_audio_create(data)
         serializer = AudioSerializer(data=data)
 
         if serializer.is_valid():
-            serializer.save()
+            audio= serializer.save()
+            create_mapbox(audio.category.name, audio.latitude, audio.longitude, audio.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -129,7 +134,7 @@ def audio_delete_get(request, audio_id):
         return JSONResponse(serializer.data)
 
     elif request.method == 'DELETE':
-        #TODO Borrar audio de mapbox
+        delete_mapbox(audio.category.name, audio.id)
         #TODO Borrar audio de servidor
 
         audio.delete()
@@ -149,7 +154,7 @@ def audio_site_create_get(request, site_id):
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
 
     try:
-        Site.objects.get(pk=site_id)
+        site= Site.objects.get(pk=site_id)
     except Site.DoesNotExist:
         return JSONResponse(response_site_not_found, status=404)
 
@@ -169,7 +174,6 @@ def audio_site_create_get(request, site_id):
         return JSONResponse(response_data_save, status=400)
 
     elif request.method == 'GET':
-        site = get_object_or_404(Site, pk=site_id)
 
         audios= site.records
         serializer = AudioSerializer(audios, many=True)
@@ -210,4 +214,102 @@ def pruned_serializer_audio_create(data):
     data['language'] = get_object_or_404(Language, name=data['language']).pk
     return data
 
+
+def create_mapbox(category, latitude, longitude, idRecord):
+    # Mapbox configuration
+    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
+                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
+                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
+    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
+    idDataset = datasetMap[category.lower()]
+
+    url= "https://api.mapbox.com/datasets/v1/soundgo/"+idDataset+"/features/"+str(idRecord)+"?access_token="+token
+    params= {
+        "id": str(idRecord),
+        "geometry": {
+            "coordinates": [
+              float(latitude),
+              float(longitude)
+            ],
+            "type": "Point"
+        },
+        "type": "Feature",
+        "properties": {
+
+        }
+    }
+
+    try:
+        request= put(url, json= params)
+        response = request.text
+    except RequestException:
+        response = "Error saving record in mapbox"
+
+
+    return response
+
+def delete_mapbox(category, idRecord):
+    # Mapbox configuration
+    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
+                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
+                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
+    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
+    idDataset = datasetMap[category.lower()]
+
+    url = "https://api.mapbox.com/datasets/v1/soundgo/" + idDataset + "/features/" + str(idRecord) + "?access_token=" + token
+
+
+    try:
+        request = delete(url)
+        response = request.text
+    except RequestException:
+        response = "Error deleting record in mapbox"
+
+
+    return response
+
+
+
+
+def update_mapbox():
+
+    # Mapbox configuration
+    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
+                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
+                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
+    tilesetMap = {"site": "soundgo.sites", "leisure": "soundgo.leisure", "experience": "soundgo.experience",
+                  "tourism": "soundgo.tourism", "advertisement": "soundgo.ads"}
+    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
+
+    for key, value in datasetMap.items():
+        idDataset = datasetMap[key]
+        idTileset = tilesetMap[key]
+
+        url = "https://api.mapbox.com/uploads/v1/soundgo?access_token="+token
+        params = {
+            "tileset": idTileset,
+            "url": "mapbox://datasets/soundgo/"+idDataset,
+            "name": idTileset.split(".")[1]
+        }
+
+
+        try:
+            request = post(url, json=params)
+            response = request.text
+        except RequestException:
+            response = "Error saving record in mapbox"
+
+
+
+    return response
+
+
+
+
+def mapbox_update():
+    schedule.every().minute.do(update_mapbox)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
