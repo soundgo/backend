@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 
 from .forms import UserAccountAdminCreationForm, UserAccountAdminChangeForm
 
-from .models import Actor
+from .models import Actor, Language
 
 UserAccount = get_user_model()
 
@@ -18,7 +18,7 @@ class ActorInline(admin.TabularInline):
     verbose_name_plural = "ACTOR"
     min_num = 1
 
-    fields = ("photo", "email", "minutes")
+    fields = ("photo", "email", "minutes", "language")
 
 
 class UserAccountAdmin(BaseUserAccountAdmin):
@@ -60,3 +60,4 @@ class UserAccountAdmin(BaseUserAccountAdmin):
 
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.unregister(Group)
+admin.site.register(Language)

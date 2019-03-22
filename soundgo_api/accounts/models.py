@@ -50,10 +50,24 @@ class UserAccount(AbstractBaseUser):
         return self.admin
 
 
+class Language(models.Model):
+    name = models.CharField('Name', max_length=200)
+
+    class Meta:
+        db_table = 'language'
+        verbose_name = 'Language'
+        verbose_name_plural = 'Languages'
+
+    def __str__(self):
+        return "%s" % self.name
+
+
 class Actor(models.Model):
 
     user_account = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='actor',
                                         verbose_name='User account')
+    language = models.ForeignKey(Language, on_delete=models.CASCADE,
+                                 verbose_name='Language')
 
     photo = models.CharField('Photo', max_length=800, blank=True)
     email = models.EmailField('Email', max_length=255, blank=False)
@@ -66,3 +80,6 @@ class Actor(models.Model):
 
     def __str__(self):
         return "%s" % self.email
+
+
+
