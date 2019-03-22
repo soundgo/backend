@@ -19,6 +19,7 @@ from django.urls import include
 from rest_framework_simplejwt import views as jwt_views
 from django.urls import path
 
+admin.site.site_header = "SoundGo administration"
 
 urlpatterns = [
     # ADMIN SITE
