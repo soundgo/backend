@@ -58,6 +58,14 @@ class UserAccountAdmin(BaseUserAccountAdmin):
     filter_horizontal = ()
 
 
+class LanguageAdmin(admin.ModelAdmin):
+
+    actions = []
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.unregister(Group)
-admin.site.register(Language)
+admin.site.register(Language, LanguageAdmin)

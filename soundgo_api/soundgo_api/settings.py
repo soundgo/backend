@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'records',
     'sites',
     'tags',
+    'cloudinary',
 ]
 
 REST_FRAMEWORK = {
