@@ -4,11 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Advertisement, Audio, Category
-from tags.models import Tag
+from accounts.models import Language
 from sites.models import Site
 from .serializers import AdvertisementSerializer, AudioSerializer
 from datetime import timedelta
 from datetime import datetime
+from django.db import transaction
 
 
 
@@ -24,6 +25,7 @@ class JSONResponse(HttpResponse):
 
 
 @csrf_exempt
+@transaction.atomic
 def advertisement_create(request):
     response_data_save = {"error": "SAVE_ADVERTISEMENT", "details": "There was an error to save the "
                                                                                  "advertisement"}
@@ -47,9 +49,11 @@ def advertisement_create(request):
 
 
 @csrf_exempt
+@transaction.atomic
 def advertisement_update_get(request, advertisement_id):
 
-    response_data_put = {"error": "UPDATE_ADVERTISEMENT", "details": "There was an error to "                                                                                                                                                 "update the advertisement"}
+    response_data_put = {"error": "UPDATE_ADVERTISEMENT", "details": "There was an error to "                                                                                                                                                 
+                                                                     "update the advertisement"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND", "details": "The advertisement does not exit"}
 
@@ -83,6 +87,7 @@ def advertisement_update_get(request, advertisement_id):
 
 #Metodos audios
 @csrf_exempt
+@transaction.atomic
 def audio_create(request):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
@@ -107,6 +112,7 @@ def audio_create(request):
                             status=400)
 
 @csrf_exempt
+@transaction.atomic
 def audio_delete_get(request, audio_id):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
@@ -135,6 +141,7 @@ def audio_delete_get(request, audio_id):
 
 #Metodo site
 @csrf_exempt
+@transaction.atomic
 def audio_site_create_get(request, site_id):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
@@ -169,7 +176,6 @@ def audio_site_create_get(request, site_id):
 
         return JSONResponse(serializer.data)
 
-
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -201,8 +207,7 @@ def pruned_serializer_audio_create(data):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data['category']= get_object_or_404(Category, name=data['category']).pk
-    #TODO poner el language por defecto en vez de la tag
-    data['tags']= [get_object_or_404(Tag, name=data['tag']).pk]
+    data['language'] = get_object_or_404(Language, name=data['language']).pk
     return data
 
 

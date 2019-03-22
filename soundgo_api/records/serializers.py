@@ -10,14 +10,14 @@ from .models import Category
 class AudioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Audio
-        fields = ('id', 'latitude', 'longitude', 'numberReproductions', 'path', 'isInappropriate', 'timestampCreation',
-                  'timestampFinish', 'category', 'site', 'tags')
+        fields = ('id', 'actor', 'latitude', 'longitude', 'numberReproductions', 'path', 'isInappropriate', 'timestampCreation',
+                  'timestampFinish', 'category', 'site', 'tags', 'language')
 
 
 class AdvertisementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Advertisement
-        fields = ('id', 'latitude', 'longitude', 'numberReproductions', 'path', 'maxPriceToPay', 'radius', 'isActive',
+        fields = ('id', 'actor', 'latitude', 'longitude', 'numberReproductions', 'path', 'maxPriceToPay', 'radius', 'isActive',
                   'isDelete')
 
 

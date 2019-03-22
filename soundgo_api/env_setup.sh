@@ -19,12 +19,25 @@ echo -e "\n<<<< Applying migrations  >>>>\n"
 
 python3 manage.py migrate
 
+###################### CREATE LANGUAGE #####################
+echo -e "\n<<<< Creating LANGUAGES >>>>\n"
+
+python3 manage.py shell -c "from accounts.models import Language; Language.objects.all().delete();"
+python3 manage.py shell -c "from accounts.models import Language; language1 = Language.objects.create(name='Spanish'); language1.save(); language2 = Language.objects.create(name='French');
+language2.save(); language3 = Language.objects.create(name='Catalá'); language3.save(); language4 = Language.objects.create(name='Portuguese'); language4.save();
+language5 = Language.objects.create(name='Italian'); language5.save(); language6 = Language.objects.create(name='German'); language6.save(); language7 = Language.objects.create(name='Japanese');
+language7.save(); language8 = Language.objects.create(name='Chinese'); language8.save(); language9 = Language.objects.create(name='English'); language9.save();
+language10 = Language.objects.create(name='Euskera'); language10.save(); language11 = Language.objects.create(name='Galician'); language11.save();
+language12 = Language.objects.create(name='Arab'); language12.save(); language13 = Language.objects.create(name='Other'); language13.save();"
+
+echo -e "Languages created\n"
+
 ###################### CREATE SUPERUSER  ###################
 
 echo -e "\n<<<< Creating superuser >>>>\n"
 
 python3 manage.py shell -c "from accounts.models import UserAccount; UserAccount.objects.all().delete();"
-python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_super_user_account('soundgoadmin', 'soundgoadmin'); actor = Actor.objects.create(user_account=user_account, email='soundgoadmin@email.com'); actor.save();"
+python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; from accounts.models import Language; UserAccount = get_user_model(); user_account = UserAccount.objects.create_super_user_account('soundgoadmin', 'soundgoadmin'); language = Language.objects.get(name='Other'); actor = Actor.objects.create(user_account=user_account, email='soundgoadmin@email.com', language=language); actor.save();"
 
 echo -e "Superuser created with the following credentials: ['soundgoadmin', 'soundgoadmin']"
 

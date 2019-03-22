@@ -4,6 +4,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Site
 from .serializers import SiteSerializer
+from django.db import transaction
 
 
 class JSONResponse(HttpResponse):
@@ -18,10 +19,11 @@ class JSONResponse(HttpResponse):
 
 
 @csrf_exempt
+@transaction.atomic
 def site_create(request):
-    response_data_save = {"error": "Error to save the site", "details": "There was an error to save the "
+    response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the "
                                                                         "site"}
-    response_data_not_method = {"error": "Incorrect method", "details": "The method is incorrect"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
         data = JSONParser().parse(request)
@@ -35,20 +37,21 @@ def site_create(request):
 
 
 @csrf_exempt
+@transaction.atomic
 def site_update_delete_get(request, site_id):
     """
     Retrieve, get,update,delete a site.
     """
-    response_data_put = {"error": "Error to update the site", "details": "There was an error to update the site"}
+    response_data_put = {"error": "UPDATE_SITE", "details": "There was an error to update the site"}
 
-    response_data_not_method = {"error": "Incorrect method", "details": "The method is incorrect"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
-    response_site_not_found = {"error": "Site not found", "details": "The site doesn't exit"}
+    response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
 
     try:
         site = Site.objects.get(pk=site_id)
     except Site.DoesNotExist:
-        return JSONResponse(response_site_not_found, status=400)
+        return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'GET':
         serializer = SiteSerializer(site)
