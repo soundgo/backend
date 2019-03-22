@@ -20,5 +20,9 @@ from . import views
 urlpatterns = [
     path('advertisement/', views.advertisement_create),
     path('advertisement/<int:advertisement_id>/', views.advertisement_update_get),
+    path('audio/', views.audio_create),
+    path('audio/<int:audio_id>/', views.audio_delete_get),
+    path('audio/site/<int:site_id>/', views.audio_site_create_get),
+
 ]
 
