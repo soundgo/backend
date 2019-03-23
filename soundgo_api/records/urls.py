@@ -23,6 +23,6 @@ urlpatterns = [
     path('audio/', views.audio_create),
     path('audio/<int:audio_id>/', views.audio_delete_get),
     path('audio/site/<int:site_id>/', views.audio_site_create),
-    path('audio/site/<int:site_id>/', views.audio_site_category_get),
+    path('audio/site/categories/<int:site_id>/', views.audio_site_category_get),
 ]
 

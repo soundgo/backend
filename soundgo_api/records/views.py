@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Advertisement, Audio, Category
-from accounts.models import Language
 from sites.models import Site
 from .serializers import AdvertisementSerializer, AudioSerializer
 from datetime import timedelta
@@ -15,7 +14,7 @@ from .cloudinary_records_manager import upload_record, remove_record
 from accounts.models import Actor
 
 
-#TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
+# TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
 
 class JSONResponse(HttpResponse):
@@ -32,8 +31,7 @@ class JSONResponse(HttpResponse):
 @csrf_exempt
 @transaction.atomic
 def advertisement_create(request):
-    response_data_save = {"error": "SAVE_ADVERTISEMENT", "details": "There was an error to save the "
-                                                                                 "advertisement"}
+    response_data_save = {"error": "SAVE_ADVERTISEMENT", "details": "There was an error to save the advertisement"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
@@ -44,7 +42,7 @@ def advertisement_create(request):
         data['actor'] = actor.id
         # Fin user de prueba
 
-        #coger el base 64 y guardar , meter en data['path'] la url que retorne
+        # coger el base 64 y guardar , meter en data['path'] la url que retorne
         data['path']= upload_record(data['base64'])
 
         data = pruned_serializer_advertisement_create(data)
@@ -52,7 +50,7 @@ def advertisement_create(request):
         if serializer.is_valid():
             advertisement= serializer.save()
 
-            #Guardar en mapbox
+            # Guardar en mapbox
             create_mapbox("advertisement", advertisement.latitude, advertisement.longitude, advertisement.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
@@ -103,7 +101,7 @@ def advertisement_update_get(request, advertisement_id):
         return JSONResponse(response_data_not_method, status=400)
 
 
-#Metodos audios
+# Metodos audios
 @csrf_exempt
 @transaction.atomic
 def audio_create(request):
@@ -120,9 +118,8 @@ def audio_create(request):
         data['actor'] = actor.id
         # Fin user de prueba
 
-        #Coger el base 64 y guardar , meter en data['path'] la url que retorne
+        # Coger el base 64 y guardar , meter en data['path'] la url que retorne
         data['path'] = upload_record(data['base64'])
-
 
         data = pruned_serializer_audio_create(data)
         serializer = AudioSerializer(data=data)
@@ -130,13 +127,14 @@ def audio_create(request):
         if serializer.is_valid():
             audio= serializer.save()
 
-            #Guardar en mapbox
+            # Guardar en mapbox
             create_mapbox(audio.category.name, audio.latitude, audio.longitude, audio.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
+
 
 @csrf_exempt
 @transaction.atomic
@@ -151,17 +149,16 @@ def audio_delete_get(request, audio_id):
     except Audio.DoesNotExist:
         return JSONResponse(response_audio_not_found, status=404)
 
-
     if request.method == 'GET':
         serializer = AudioSerializer(audio)
         return JSONResponse(serializer.data)
 
     elif request.method == 'DELETE':
 
-        #Borramos de mapbox
+        # Borramos de mapbox
         delete_mapbox(audio.category.name, audio.id)
 
-        #Borramos del servidor
+        # Borramos del servidor
         result = remove_record(audio.path)
         if not result:
             raise Exception(response_audio_not_delete)
@@ -173,7 +170,7 @@ def audio_delete_get(request, audio_id):
                             status=400)
 
 
-#Metodo site
+# Metodo site
 @csrf_exempt
 @transaction.atomic
 def audio_site_create(request, site_id):
@@ -204,7 +201,6 @@ def audio_site_create(request, site_id):
         data['path'] = upload_record(data['base64'])
         # Este audio no se guarda en mapbox, en mapbox estará el sitio
 
-
         if serializer.is_valid():
             serializer.save()
             return JSONResponse(serializer.data, status=201)
@@ -215,7 +211,7 @@ def audio_site_create(request, site_id):
                             status=400)
 
 
-#Método para obtener listado de audios de un sitio que pertenece a una categoría concreta
+# Método para obtener listado de audios de un sitio que pertenece a una categoría concreta
 @csrf_exempt
 def audio_site_category_get(request, site_id):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
@@ -228,19 +224,20 @@ def audio_site_category_get(request, site_id):
         return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'GET':
-        category_names= request.GET.get('categories')
+        category_names = request.GET.get('categories')
 
-        audios_list= []
+        audios_list = []
+        categories_list = []
         for category_name in category_names.split(","):
             try:
 
                 category_found = Category.objects.get(name=category_name)
+                categories_list.append(category_found)
             except Category.DoesNotExist:
                 return JSONResponse(response_category_not_found, status=404)
 
-            audios = Audio.objects.all().filter(category=category_found,site=site_found)
-            audios_list.extend(audios)
-
+        audios = Audio.objects.all().filter(category__in=categories_list, site=site_found)
+        audios_list.extend(audios)
 
         serializer = AudioSerializer(audios_list, many=True)
 
@@ -251,8 +248,7 @@ def audio_site_category_get(request, site_id):
                             status=400)
 
 
-
-#Metodos auxiliares
+# Metodos auxiliares
 def pruned_serializer_advertisement_update(advertisement, data):
     data["latitude"] = advertisement.latitude
     data["longitude"] = advertisement.longitude
@@ -272,16 +268,12 @@ def pruned_serializer_advertisement_create(data):
 
 
 def pruned_serializer_audio_create(data):
-    timeNow= datetime.now()
-    time = timeNow + timedelta(seconds=get_object_or_404(Category, name=data['category']).minDurationMap)
+    time_now = datetime.now()
+    time = time_now + timedelta(seconds=get_object_or_404(Category, name=data['category']).minDurationMap)
     data['timestampFinish'] = time
-    data['timestampCreation'] = timeNow
+    data['timestampCreation'] = time_now
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data['category']= get_object_or_404(Category, name=data['category']).pk
     data['language'] = get_object_or_404(Actor, pk=data['actor']).language.pk
     return data
-
-
-
-
