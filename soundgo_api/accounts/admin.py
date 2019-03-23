@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 
 from .forms import UserAccountAdminCreationForm, UserAccountAdminChangeForm
 
-from .models import Actor, Language, Configuration
+from .models import Actor, Language, SoundGoConfig
 
 UserAccount = get_user_model()
 
@@ -80,4 +80,4 @@ class ConfigurationAdmin(admin.ModelAdmin):
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.unregister(Group)
 admin.site.register(Language, LanguageAdmin)
-admin.site.register(Configuration, ConfigurationAdmin)
+admin.site.register(SoundGoConfig, ConfigurationAdmin)
