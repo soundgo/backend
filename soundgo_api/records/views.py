@@ -185,6 +185,44 @@ def audio_site_create_get(request, site_id):
                             status=400)
 
 
+#Método para obtener listado de audios de un sitio que pertenece a una categoría concreta
+@csrf_exempt
+def audio_site_category_get(request, site_id, category_name):
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
+    response_category_not_found = {"error": "CATEGORY_NOT_FOUND", "details": "The category does not exist"}
+
+    try:
+        Site.objects.get(pk=site_id)
+    except Site.DoesNotExist:
+        return JSONResponse(response_site_not_found, status=404)
+
+    try:
+        category_found = Category.objects.get(name=category_name)
+    except Category.DoesNotExist:
+        return JSONResponse(response_category_not_found, status=404)
+
+    try:
+        site_found = Site.objects.get(pk=site_id)
+    except Category.DoesNotExist:
+        return JSONResponse(response_site_not_found, status=404)
+
+    if request.method == 'GET':
+
+        audios = Audio.objects.all().filter(category=category_found,site=site_found)
+
+        serializer = AudioSerializer(audios, many=True)
+
+        return JSONResponse(serializer.data)
+
+    else:
+        return JSONResponse(response_data_not_method,
+                            status=400)
+
+
+
+
+
 #Metodos auxiliares
 def pruned_serializer_advertisement_update(advertisement, data):
     data["latitude"] = advertisement.latitude
