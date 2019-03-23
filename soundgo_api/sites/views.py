@@ -3,8 +3,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Site
+from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
+from records.mapbox_manager import create_mapbox, delete_mapbox
 
 
 class JSONResponse(HttpResponse):
@@ -21,15 +23,25 @@ class JSONResponse(HttpResponse):
 @csrf_exempt
 @transaction.atomic
 def site_create(request):
+
+
     response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the "
                                                                         "site"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
         data = JSONParser().parse(request)
+
+        # TODO user de prueba
+        actor = Actor.objects.all()[0]
+        data['actor'] = actor.id
+        # Fin user de prueba
+
         serializer = SiteSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            site= serializer.save()
+            # Guardar en mapbox
+            create_mapbox("site", site.latitude, site.longitude, site.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -59,6 +71,7 @@ def site_update_delete_get(request, site_id):
 
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
+        data = pruned_serializer_site_update(site, data)
         serializer = SiteSerializer(site, data=data)
         if serializer.is_valid():
             serializer.save()
@@ -66,8 +79,15 @@ def site_update_delete_get(request, site_id):
         return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
+        delete_mapbox("site", site.id)
         site.delete()
         return HttpResponse(status=204)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
+
+def pruned_serializer_site_update(site, data):
+    data["latitude"] = site.latitude
+    data["longitude"] = site.longitude
+    data["actor"] = site.actor.id
+    return data
