@@ -5,6 +5,7 @@ from rest_framework.parsers import JSONParser
 from .models import Site
 from .serializers import SiteSerializer
 from django.db import transaction
+from records.mapbox_manager import create_mapbox, delete_mapbox
 
 
 class JSONResponse(HttpResponse):
@@ -29,7 +30,9 @@ def site_create(request):
         data = JSONParser().parse(request)
         serializer = SiteSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            site= serializer.save()
+            # Guardar en mapbox
+            create_mapbox("site", site.latitude, site.longitude, site.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -66,6 +69,7 @@ def site_update_delete_get(request, site_id):
         return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
+        delete_mapbox(site.category.name, site.id)
         site.delete()
         return HttpResponse(status=204)
 

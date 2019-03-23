@@ -10,11 +10,9 @@ from .serializers import AdvertisementSerializer, AudioSerializer
 from datetime import timedelta
 from datetime import datetime
 from django.db import transaction
+from .mapbox_manager import create_mapbox, delete_mapbox
+from .cloudinary_records_manager import upload_record, remove_record
 
-from requests import post, put, delete
-from requests.exceptions import RequestException
-import schedule
-import time
 
 
 class JSONResponse(HttpResponse):
@@ -38,13 +36,16 @@ def advertisement_create(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
 
-        # TODO coger el base 64 y guardar , meter en data['path'] la url que retorne
-        # TODO guardar en mapbox el advertisement
+        #coger el base 64 y guardar , meter en data['path'] la url que retorne
+        data['path']= upload_record(data['base64'])
 
         data = pruned_serializer_advertisement_create(data)
         serializer = AdvertisementSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            advertisement= serializer.save()
+
+            #Guardar en mapbox
+            create_mapbox("advertisement", advertisement.latitude, advertisement.longitude, advertisement.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -73,16 +74,21 @@ def advertisement_update_get(request, advertisement_id):
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
 
-        #Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
-        if data['isDelete']:
-            pass
-            # TODO Borrar audio de mapbox
-            # TODO Borrar audio de servidor
-
         data = pruned_serializer_advertisement_update(advertisement, data)
         serializer = AdvertisementSerializer(advertisement, data=data)
         if serializer.is_valid():
             serializer.save()
+
+            # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
+            if data['isDelete']:
+                # Borrar audio de servidor
+                result = remove_record(advertisement.path)
+                if not result:
+                    raise Exception(response_data_put)
+
+                # Borrar audio de mapbox
+                delete_mapbox(advertisement.category.name, advertisement.id)
+
             return JSONResponse(serializer.data)
         return JSONResponse(response_data_put, status=400)
     else:
@@ -101,7 +107,8 @@ def audio_create(request):
 
         data = JSONParser().parse(request)
 
-        #TODO coger el base 64 y guardar , meter en data['path'] la url que retorne
+        #Coger el base 64 y guardar , meter en data['path'] la url que retorne
+        data['path'] = upload_record(data['base64'])
 
 
         data = pruned_serializer_audio_create(data)
@@ -109,6 +116,8 @@ def audio_create(request):
 
         if serializer.is_valid():
             audio= serializer.save()
+
+            #Guardar en mapbox
             create_mapbox(audio.category.name, audio.latitude, audio.longitude, audio.id)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
@@ -122,6 +131,7 @@ def audio_delete_get(request, audio_id):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
+    response_audio_not_delete = {"error": "AUDIO_NOT_DELETE", "details": "The audio can not delete"}
 
     try:
         audio = Audio.objects.get(pk=audio_id)
@@ -134,8 +144,14 @@ def audio_delete_get(request, audio_id):
         return JSONResponse(serializer.data)
 
     elif request.method == 'DELETE':
+
+        #Borramos de mapbox
         delete_mapbox(audio.category.name, audio.id)
-        #TODO Borrar audio de servidor
+
+        #Borramos del servidor
+        result = remove_record(audio.path)
+        if not result:
+            raise Exception(response_audio_not_delete)
 
         audio.delete()
         return HttpResponse(status=204)
@@ -165,8 +181,11 @@ def audio_site_create_get(request, site_id):
         data['site'] = site_id
         serializer = AudioSerializer(data=data)
 
-        # TODO coger el base 64 y guardar , meter en data['path'] la url que retorne
-        # TODO guardar en mapbox el audio
+
+        # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+        data['path'] = upload_record(data['base64'])
+        # Este audio no se guarda en mapbox, en mapbox estará el sitio
+
 
         if serializer.is_valid():
             serializer.save()
@@ -215,101 +234,5 @@ def pruned_serializer_audio_create(data):
     return data
 
 
-def create_mapbox(category, latitude, longitude, idRecord):
-    # Mapbox configuration
-    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
-                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
-                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
-    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
-    idDataset = datasetMap[category.lower()]
 
-    url= "https://api.mapbox.com/datasets/v1/soundgo/"+idDataset+"/features/"+str(idRecord)+"?access_token="+token
-    params= {
-        "id": str(idRecord),
-        "geometry": {
-            "coordinates": [
-              float(latitude),
-              float(longitude)
-            ],
-            "type": "Point"
-        },
-        "type": "Feature",
-        "properties": {
-
-        }
-    }
-
-    try:
-        request= put(url, json= params)
-        response = request.text
-    except RequestException:
-        response = "Error saving record in mapbox"
-
-
-    return response
-
-def delete_mapbox(category, idRecord):
-    # Mapbox configuration
-    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
-                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
-                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
-    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
-    idDataset = datasetMap[category.lower()]
-
-    url = "https://api.mapbox.com/datasets/v1/soundgo/" + idDataset + "/features/" + str(idRecord) + "?access_token=" + token
-
-
-    try:
-        request = delete(url)
-        response = request.text
-    except RequestException:
-        response = "Error deleting record in mapbox"
-
-
-    return response
-
-
-
-
-def update_mapbox():
-
-    # Mapbox configuration
-    datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
-                  "experience": "cjtkae6lv0phe2xtg8u2jiny9", "tourism": "cjtkaesz804254bodwfnw63r6",
-                  "advertisement": "cjtkacy841h2g2wllukp7sfij"}
-    tilesetMap = {"site": "soundgo.sites", "leisure": "soundgo.leisure", "experience": "soundgo.experience",
-                  "tourism": "soundgo.tourism", "advertisement": "soundgo.ads"}
-    token = "sk.eyJ1Ijoic291bmRnbyIsImEiOiJjanRrYzl0a3YwZ3ljM3lxamVqYmhidjJmIn0.zwUJZmYb3qrhsLoPN-Xqrw"
-
-    for key, value in datasetMap.items():
-        idDataset = datasetMap[key]
-        idTileset = tilesetMap[key]
-
-        url = "https://api.mapbox.com/uploads/v1/soundgo?access_token="+token
-        params = {
-            "tileset": idTileset,
-            "url": "mapbox://datasets/soundgo/"+idDataset,
-            "name": idTileset.split(".")[1]
-        }
-
-
-        try:
-            request = post(url, json=params)
-            response = request.text
-        except RequestException:
-            response = "Error saving record in mapbox"
-
-
-
-    return response
-
-
-
-
-def mapbox_update():
-    schedule.every().minute.do(update_mapbox)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
 
