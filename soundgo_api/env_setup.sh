@@ -36,8 +36,8 @@ language7.save(); language8 = Language.objects.create(name='Chinese'); language8
 language10 = Language.objects.create(name='Euskera'); language10.save(); language11 = Language.objects.create(name='Galician'); language11.save();
 language12 = Language.objects.create(name='Arab'); language12.save(); language13 = Language.objects.create(name='Other'); language13.save();"
 
-python3 manage.py shell -c "from accounts.models import Configuration; Configuration.objects.all().delete();"
-python3 manage.py shell -c "from accounts.models import Configuration; configuration = Configuration.objects.create(maximum_radius=2000, minimum_radius=20, time_listen_advertisement=3, minimum_reports_ban=10); configuration.save();"
+python3 manage.py shell -c "from accounts.models import SoundGoConfig; SoundGoConfig.objects.all().delete();"
+python3 manage.py shell -c "from accounts.models import SoundGoConfig; sound_go_config = SoundGoConfig.objects.create(maximum_radius=2000, minimum_radius=20, time_listen_advertisement=3, minimum_reports_ban=10); sound_go_config.save();"
 
 echo -e "Database populated"
 

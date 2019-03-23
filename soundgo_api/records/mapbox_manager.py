@@ -1,7 +1,6 @@
 from requests import post, put, delete
 from requests.exceptions import RequestException
-import schedule
-import time
+
 
 def create_mapbox(category, latitude, longitude, idRecord):
     # Mapbox configuration
@@ -33,8 +32,8 @@ def create_mapbox(category, latitude, longitude, idRecord):
     except RequestException:
         response = "Error saving record in mapbox"
 
-
     return response
+
 
 def delete_mapbox(category, idRecord):
     # Mapbox configuration
@@ -46,17 +45,13 @@ def delete_mapbox(category, idRecord):
 
     url = "https://api.mapbox.com/datasets/v1/soundgo/" + idDataset + "/features/" + str(idRecord) + "?access_token=" + token
 
-
     try:
         request = delete(url)
         response = request.text
     except RequestException:
         response = "Error deleting record in mapbox"
 
-
     return response
-
-
 
 
 def update_mapbox():
@@ -80,23 +75,10 @@ def update_mapbox():
             "name": idTileset.split(".")[1]
         }
 
-
         try:
             request = post(url, json=params)
             response = request.text
         except RequestException:
             response = "Error saving record in mapbox"
 
-
-
     return response
-
-
-
-
-def mapbox_update():
-    schedule.every().minute.do(update_mapbox)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
