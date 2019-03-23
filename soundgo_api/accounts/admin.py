@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 
 from .forms import UserAccountAdminCreationForm, UserAccountAdminChangeForm
 
-from .models import Actor, Language
+from .models import Actor, Language, Configuration
 
 UserAccount = get_user_model()
 
@@ -66,6 +66,18 @@ class LanguageAdmin(admin.ModelAdmin):
         return False
 
 
+class ConfigurationAdmin(admin.ModelAdmin):
+
+    actions = []
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.unregister(Group)
 admin.site.register(Language, LanguageAdmin)
+admin.site.register(Configuration, ConfigurationAdmin)
