@@ -29,7 +29,7 @@ def remove_record(url):
     """
 
     public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
-    res = uploader.destroy(public_id)
+    res = uploader.destroy(public_id, resource_type="video")
 
     if res["result"] == "ok":
         return True

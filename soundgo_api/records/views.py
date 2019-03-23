@@ -12,7 +12,10 @@ from datetime import datetime
 from django.db import transaction
 from .mapbox_manager import create_mapbox, delete_mapbox
 from .cloudinary_records_manager import upload_record, remove_record
+from accounts.models import Actor
 
+
+#TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
 
 class JSONResponse(HttpResponse):
@@ -35,6 +38,11 @@ def advertisement_create(request):
 
     if request.method == 'POST':
         data = JSONParser().parse(request)
+
+        # TODO user de prueba. Comprobar que tenga tarjeta de credito
+        actor = Actor.objects.all()[0]
+        data['actor'] = actor.id
+        # Fin user de prueba
 
         #coger el base 64 y guardar , meter en data['path'] la url que retorne
         data['path']= upload_record(data['base64'])
@@ -87,7 +95,7 @@ def advertisement_update_get(request, advertisement_id):
                     raise Exception(response_data_put)
 
                 # Borrar audio de mapbox
-                delete_mapbox(advertisement.category.name, advertisement.id)
+                delete_mapbox("advertisement", advertisement.id)
 
             return JSONResponse(serializer.data)
         return JSONResponse(response_data_put, status=400)
@@ -104,8 +112,13 @@ def audio_create(request):
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
 
     if request.method == 'POST':
-
+        print(request)
         data = JSONParser().parse(request)
+
+        # TODO user de prueba
+        actor = Actor.objects.all()[0]
+        data['actor'] = actor.id
+        # Fin user de prueba
 
         #Coger el base 64 y guardar , meter en data['path'] la url que retorne
         data['path'] = upload_record(data['base64'])
@@ -163,24 +176,29 @@ def audio_delete_get(request, audio_id):
 #Metodo site
 @csrf_exempt
 @transaction.atomic
-def audio_site_create_get(request, site_id):
+def audio_site_create(request, site_id):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
 
     try:
-        site= Site.objects.get(pk=site_id)
+        Site.objects.get(pk=site_id)
     except Site.DoesNotExist:
         return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'POST':
         data = JSONParser().parse(request)
+
+        # TODO user de prueba
+        actor = Actor.objects.all()[0]
+        data['actor'] = actor.id
+        # Fin user de prueba
+
         data = pruned_serializer_audio_create(data)
         # Metemos en el audio el site
         data['site'] = site_id
         serializer = AudioSerializer(data=data)
-
 
         # Coger el base 64 y guardar , meter en data['path'] la url que retorne
         data['path'] = upload_record(data['base64'])
@@ -192,16 +210,46 @@ def audio_site_create_get(request, site_id):
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
 
-    elif request.method == 'GET':
+    else:
+        return JSONResponse(response_data_not_method,
+                            status=400)
 
-        audios= site.records
-        serializer = AudioSerializer(audios, many=True)
+
+#Método para obtener listado de audios de un sitio que pertenece a una categoría concreta
+@csrf_exempt
+def audio_site_category_get(request, site_id):
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
+    response_category_not_found = {"error": "CATEGORY_NOT_FOUND", "details": "The category does not exist"}
+
+    try:
+        site_found= Site.objects.get(pk=site_id)
+    except Site.DoesNotExist:
+        return JSONResponse(response_site_not_found, status=404)
+
+    if request.method == 'GET':
+        category_names= request.GET.get('categories')
+
+        audios_list= []
+        for category_name in category_names.split(","):
+            try:
+
+                category_found = Category.objects.get(name=category_name)
+            except Category.DoesNotExist:
+                return JSONResponse(response_category_not_found, status=404)
+
+            audios = Audio.objects.all().filter(category=category_found,site=site_found)
+            audios_list.extend(audios)
+
+
+        serializer = AudioSerializer(audios_list, many=True)
 
         return JSONResponse(serializer.data)
 
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
+
 
 
 #Metodos auxiliares
@@ -212,6 +260,7 @@ def pruned_serializer_advertisement_update(advertisement, data):
     data["path"] = advertisement.path
     data["radius"] = advertisement.radius
     data["isActive"] = advertisement.isActive
+    data["actor"] = advertisement.actor.id
     return data
 
 
@@ -230,7 +279,7 @@ def pruned_serializer_audio_create(data):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data['category']= get_object_or_404(Category, name=data['category']).pk
-    data['language'] = get_object_or_404(Language, name=data['language']).pk
+    data['language'] = get_object_or_404(Actor, pk=data['actor']).language.pk
     return data
 
 
