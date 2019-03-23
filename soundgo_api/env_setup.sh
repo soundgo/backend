@@ -5,12 +5,14 @@
 
 echo -e "\n<<<< Installing requirements >>>>\n"
 
+cd ..
 pip3 install -r requirements.txt
 
 ###################### MAKE MIGRATIONS #####################
 
 echo -e "\n<<<< Making migrations >>>>\n"
 
+cd soundgo_api
 python3 manage.py makemigrations
 
 ########################## MIGRATE #########################
