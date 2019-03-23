@@ -77,7 +77,6 @@ def update_mapbox():
             "name": idTileset.split(".")[1]
         }
 
-
         try:
             request = post(url, json=params)
             response = request.text
