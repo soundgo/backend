@@ -3,6 +3,7 @@ from requests.exceptions import RequestException
 import schedule
 import time
 
+
 def create_mapbox(category, latitude, longitude, idRecord):
     # Mapbox configuration
     datasetMap = {"site": "cjtke1edi02q02wn5kjd9en24", "leisure": "cjtkadw8e03jy4fnycl0ue5cn",
@@ -33,8 +34,8 @@ def create_mapbox(category, latitude, longitude, idRecord):
     except RequestException:
         response = "Error saving record in mapbox"
 
-
     return response
+
 
 def delete_mapbox(category, idRecord):
     # Mapbox configuration
@@ -46,17 +47,13 @@ def delete_mapbox(category, idRecord):
 
     url = "https://api.mapbox.com/datasets/v1/soundgo/" + idDataset + "/features/" + str(idRecord) + "?access_token=" + token
 
-
     try:
         request = delete(url)
         response = request.text
     except RequestException:
         response = "Error deleting record in mapbox"
 
-
     return response
-
-
 
 
 def update_mapbox():
@@ -87,11 +84,7 @@ def update_mapbox():
         except RequestException:
             response = "Error saving record in mapbox"
 
-
-
     return response
-
-
 
 
 def mapbox_update():
