@@ -1,4 +1,5 @@
 from cloudinary import config, uploader
+import os
 
 config(
     cloud_name="soundgo",
@@ -17,3 +18,20 @@ def upload_photo(base64):
 
     res = uploader.upload(base64, folder="photos/")
     return res["secure_url"]
+
+
+def remove_photo(url):
+
+    """
+    Function to remove a photo of the SoundGo Cloudinary repository
+    :param url: photo URL
+    :return: True if it is deleted correctly or False in another case
+    """
+
+    public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
+    res = uploader.destroy(public_id)
+
+    if res["result"] == "ok":
+        return True
+    else:
+        return False
