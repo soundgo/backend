@@ -95,7 +95,3 @@ class Configuration(models.Model):
 
     def __str__(self):
         return "Configuration"
-
-
-
-
