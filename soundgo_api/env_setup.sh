@@ -36,11 +36,19 @@ language12 = Language.objects.create(name='Arab'); language12.save(); language13
 
 echo -e "Database populated"
 
+###################### CREATE USER  ###################
+
+echo -e "\n<<<< Creating user >>>>\n"
+
+python3 manage.py shell -c "from accounts.models import UserAccount; UserAccount.objects.all().delete();"
+python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; from accounts.models import Language; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgouser', 'soundgouser'); language = Language.objects.get(name='Other'); actor = Actor.objects.create(user_account=user_account, email='soundgouser@email.com', language=language); actor.save();"
+
+echo -e "User created with the following credentials: ['soundgouser', 'soundgouser']"
+
 ###################### CREATE SUPERUSER  ###################
 
 echo -e "\n<<<< Creating superuser >>>>\n"
 
-python3 manage.py shell -c "from accounts.models import UserAccount; UserAccount.objects.all().delete();"
 python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; from accounts.models import Language; UserAccount = get_user_model(); user_account = UserAccount.objects.create_super_user_account('soundgoadmin', 'soundgoadmin'); language = Language.objects.get(name='Other'); actor = Actor.objects.create(user_account=user_account, email='soundgoadmin@email.com', language=language); actor.save();"
 
 echo -e "Superuser created with the following credentials: ['soundgoadmin', 'soundgoadmin']\n"
