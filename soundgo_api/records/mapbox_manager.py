@@ -1,7 +1,5 @@
 from requests import post, put, delete
 from requests.exceptions import RequestException
-import schedule
-import time
 
 
 def create_mapbox(category, latitude, longitude, idRecord):
@@ -84,11 +82,3 @@ def update_mapbox():
             response = "Error saving record in mapbox"
 
     return response
-
-
-def mapbox_update():
-    schedule.every().minute.do(update_mapbox)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
