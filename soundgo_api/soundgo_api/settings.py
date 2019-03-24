@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'sites',
     'tags',
     'cloudinary',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -80,12 +81,28 @@ AUTH_USER_MODEL = 'accounts.UserAccount'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8000',
+    'localhost:8000',
+    '127.0.0.1:4200',
+    'localhost:4200',
+    'soundgo-api-v1.herokuapp.com',
+    'soundgo-api-v2.herokuapp.com',
+    'soundgo-api-v3.herokuapp.com',
+    'soundgo-v1.herokuapp.com',
+    'soundgo-v2.herokuapp.com',
+    'soundgo-v3.herokuapp.com',
+)
 
 ROOT_URLCONF = 'soundgo_api.urls'
 
