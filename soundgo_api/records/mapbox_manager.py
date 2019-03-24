@@ -15,8 +15,8 @@ def create_mapbox(category, latitude, longitude, idRecord):
         "id": str(idRecord),
         "geometry": {
             "coordinates": [
-              float(latitude),
-              float(longitude)
+              float(longitude),
+              float(latitude)
             ],
             "type": "Point"
         },
