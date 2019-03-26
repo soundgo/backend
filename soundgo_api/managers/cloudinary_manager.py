@@ -1,4 +1,4 @@
-from cloudinary import config, uploader
+from cloudinary import config, uploader, api
 import os
 
 config(
@@ -64,3 +64,17 @@ def remove_record(url):
         return True
     else:
         return False
+
+
+def get_record_duration(url):
+
+    """
+    Function to get the duration of a record of the SoundGo Cloudinary repository
+    :param url: record URL
+    :return: the duration of the record
+    """
+
+    public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
+    res = api.resource(public_id, resource_type="video", image_metadata=True)
+
+    return int(res["duration"])
