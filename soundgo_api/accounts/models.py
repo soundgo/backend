@@ -5,6 +5,8 @@ from .managers import UserAccountManager
 
 from django.conf import settings
 
+from languages.models import Language
+
 
 class UserAccount(AbstractBaseUser):
 
@@ -50,18 +52,6 @@ class UserAccount(AbstractBaseUser):
         return self.admin
 
 
-class Language(models.Model):
-    name = models.CharField('Name', max_length=200)
-
-    class Meta:
-        db_table = 'language'
-        verbose_name = 'Language'
-        verbose_name_plural = 'Languages'
-
-    def __str__(self):
-        return "%s" % self.name
-
-
 class Actor(models.Model):
 
     user_account = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='actor',
@@ -80,18 +70,3 @@ class Actor(models.Model):
 
     def __str__(self):
         return "%s" % self.email
-
-
-class SoundGoConfig(models.Model):
-    maximum_radius = models.PositiveIntegerField('Maximum Radius (m)', default=2000)
-    minimum_radius = models.PositiveIntegerField('Minimum Radius (m)', default=20)
-    time_listen_advertisement = models.FloatField('Time gained to listen an advertisement', default=3)
-    minimum_reports_ban = models.PositiveIntegerField('Minimum reports to ban an audio', default=10)
-
-    class Meta:
-        db_table = 'sound_go_config'
-        verbose_name = 'Configuration'
-        verbose_name_plural = 'Configurations'
-
-    def __str__(self):
-        return "Configuration"
