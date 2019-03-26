@@ -6,7 +6,7 @@ from .models import Site
 from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
-from records.mapbox_manager import create_mapbox, delete_mapbox
+from managers.firebase_manager import add_site, remove_site
 
 
 class JSONResponse(HttpResponse):
@@ -24,9 +24,7 @@ class JSONResponse(HttpResponse):
 @transaction.atomic
 def site_create(request):
 
-
-    response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the "
-                                                                        "site"}
+    response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the site"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
@@ -39,9 +37,10 @@ def site_create(request):
 
         serializer = SiteSerializer(data=data)
         if serializer.is_valid():
-            site= serializer.save()
-            # Guardar en mapbox
-            create_mapbox("site", site.latitude, site.longitude, site.id)
+            # Save in db
+            site = serializer.save()
+            # Save in Firebase Cloud Firestore
+            add_site(site)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -79,15 +78,19 @@ def site_update_delete_get(request, site_id):
         return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
-        delete_mapbox("site", site.id)
+        # Remove site from Firebase Cloud Firestore
+        remove_site(site)
+        # Remove site from db
         site.delete()
         return HttpResponse(status=204)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
 
+
 def pruned_serializer_site_update(site, data):
     data["latitude"] = site.latitude
     data["longitude"] = site.longitude
     data["actor"] = site.actor.id
+
     return data
