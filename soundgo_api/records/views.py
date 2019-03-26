@@ -9,9 +9,9 @@ from .serializers import AdvertisementSerializer, AudioSerializer
 from datetime import timedelta
 from datetime import datetime
 from django.db import transaction
-from .mapbox_manager import create_mapbox, delete_mapbox
-from .cloudinary_records_manager import upload_record, remove_record
+from managers.cloudinary_manager import upload_record, remove_record
 from accounts.models import Actor
+from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
 
 
 # TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
@@ -43,15 +43,15 @@ def advertisement_create(request):
         # Fin user de prueba
 
         # coger el base 64 y guardar , meter en data['path'] la url que retorne
-        data['path']= upload_record(data['base64'])
+        data['path'] = upload_record(data['base64'])
 
         data = pruned_serializer_advertisement_create(data)
         serializer = AdvertisementSerializer(data=data)
         if serializer.is_valid():
-            advertisement= serializer.save()
-
-            # Guardar en mapbox
-            create_mapbox("advertisement", advertisement.latitude, advertisement.longitude, advertisement.id)
+            # Save in db
+            advertisement = serializer.save()
+            # Save in Firebase Cloud Firestore
+            add_advertisement(advertisement)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -66,7 +66,8 @@ def advertisement_update_get(request, advertisement_id):
     response_data_put = {"error": "UPDATE_ADVERTISEMENT", "details": "There was an error to "                                                                                                                                                 
                                                                      "update the advertisement"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
-    response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND", "details": "The advertisement does not exit"}
+    response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND",
+                                        "details": "The advertisement does not exit"}
 
     try:
         advertisement = Advertisement.objects.get(pk=advertisement_id)
@@ -87,13 +88,12 @@ def advertisement_update_get(request, advertisement_id):
 
             # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
             if data['isDelete']:
-                # Borrar audio de servidor
+                # Borrar grabacion de servidor
                 result = remove_record(advertisement.path)
                 if not result:
                     raise Exception(response_data_put)
-
-                # Borrar audio de mapbox
-                delete_mapbox("advertisement", advertisement.id)
+                # Remove advertisement from Firebase Cloud Firestore
+                remove_advertisement(advertisement)
 
             return JSONResponse(serializer.data)
         return JSONResponse(response_data_put, status=400)
@@ -125,10 +125,10 @@ def audio_create(request):
         serializer = AudioSerializer(data=data)
 
         if serializer.is_valid():
-            audio= serializer.save()
-
-            # Guardar en mapbox
-            create_mapbox(audio.category.name, audio.latitude, audio.longitude, audio.id)
+            # Save in db
+            audio = serializer.save()
+            # Save in Firebase Cloud Firestore
+            add_audio(audio)
             return JSONResponse(serializer.data, status=201)
         return JSONResponse(response_data_save, status=400)
     else:
@@ -155,9 +155,8 @@ def audio_delete_get(request, audio_id):
 
     elif request.method == 'DELETE':
 
-        # Borramos de mapbox
-        delete_mapbox(audio.category.name, audio.id)
-
+        # Remove audio from Firebase Cloud Firestore
+        remove_audio(audio)
         # Borramos del servidor
         result = remove_record(audio.path)
         if not result:
@@ -219,7 +218,7 @@ def audio_site_category_get(request, site_id):
     response_category_not_found = {"error": "CATEGORY_NOT_FOUND", "details": "The category does not exist"}
 
     try:
-        site_found= Site.objects.get(pk=site_id)
+        site_found = Site.objects.get(pk=site_id)
     except Site.DoesNotExist:
         return JSONResponse(response_site_not_found, status=404)
 
@@ -274,6 +273,6 @@ def pruned_serializer_audio_create(data):
     data['timestampCreation'] = time_now
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
-    data['category']= get_object_or_404(Category, name=data['category']).pk
+    data['category'] = get_object_or_404(Category, name=data['category']).pk
     data['language'] = get_object_or_404(Actor, pk=data['actor']).language.pk
     return data
