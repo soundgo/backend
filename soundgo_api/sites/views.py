@@ -31,7 +31,7 @@ def site_create(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
 
-        # TODO user de prueba
+        # TODO user de prueba, para que se cree tiene que ser un usuario con tarjeta o ser administrador
         actor = Actor.objects.all()[0]
         data['actor'] = actor.id
         # Fin user de prueba
@@ -68,6 +68,8 @@ def site_update_delete_get(request, site_id):
     if request.method == 'GET':
         serializer = SiteSerializer(site)
         return JSONResponse(serializer.data)
+
+    # Todo solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
