@@ -12,6 +12,7 @@ from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record
 from accounts.models import Actor
 from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
+from copy import deepcopy
 
 
 # TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
@@ -43,17 +44,26 @@ def advertisement_create(request):
         # Fin user de prueba
 
         # coger el base 64 y guardar , meter en data['path'] la url que retorne
-        data['path'] = upload_record(data['base64'])
+        try:
+            data['path'] = upload_record(data['base64'])
+            data = pruned_serializer_advertisement_create(data)
+            serializer = AdvertisementSerializer(data=data)
+        except Exception:
+            if 'path' in data:
+                remove_record(data['path'])
+                return JSONResponse(response_data_save, status=400)
+            else:
+                return JSONResponse(response_data_save, status=400)
 
-        data = pruned_serializer_advertisement_create(data)
-        serializer = AdvertisementSerializer(data=data)
         if serializer.is_valid():
             # Save in db
             advertisement = serializer.save()
             # Save in Firebase Cloud Firestore
             add_advertisement(advertisement)
             return JSONResponse(serializer.data, status=201)
+        remove_record(data['path'])
         return JSONResponse(response_data_save, status=400)
+
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -68,6 +78,7 @@ def advertisement_update_get(request, advertisement_id):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND",
                                         "details": "The advertisement does not exit"}
+    response_data_deleted = {"error": "DELETE_ADVERTISEMENT", "details": "The advertisement is deleted"}
 
     try:
         advertisement = Advertisement.objects.get(pk=advertisement_id)
@@ -79,6 +90,9 @@ def advertisement_update_get(request, advertisement_id):
         return JSONResponse(serializer.data)
 
     elif request.method == 'PUT':
+        if advertisement.isDelete is True:
+            return JSONResponse(response_data_deleted, status=400)
+
         data = JSONParser().parse(request)
 
         data = pruned_serializer_advertisement_update(advertisement, data)
@@ -119,10 +133,17 @@ def audio_create(request):
         # Fin user de prueba
 
         # Coger el base 64 y guardar , meter en data['path'] la url que retorne
-        data['path'] = upload_record(data['base64'])
+        try:
+            data['path'] = upload_record(data['base64'])
 
-        data = pruned_serializer_audio_create(data)
-        serializer = AudioSerializer(data=data)
+            data = pruned_serializer_audio_create(data)
+            serializer = AudioSerializer(data=data)
+        except Exception:
+            if 'path' in data:
+                remove_record(data['path'])
+                return JSONResponse(response_data_save, status=400)
+            else:
+                return JSONResponse(response_data_save, status=400)
 
         if serializer.is_valid():
             # Save in db
@@ -130,6 +151,7 @@ def audio_create(request):
             # Save in Firebase Cloud Firestore
             add_audio(audio)
             return JSONResponse(serializer.data, status=201)
+        remove_record(data['path'])
         return JSONResponse(response_data_save, status=400)
     else:
         return JSONResponse(response_data_not_method,
@@ -154,15 +176,19 @@ def audio_delete_get(request, audio_id):
         return JSONResponse(serializer.data)
 
     elif request.method == 'DELETE':
-
-        # Remove audio from Firebase Cloud Firestore
-        remove_audio(audio)
-        # Borramos del servidor
-        result = remove_record(audio.path)
-        if not result:
-            raise Exception(response_audio_not_delete)
-
+        audio_copy = deepcopy(audio)
         audio.delete()
+        # Remove audio from Firebase Cloud Firestore
+        try:
+            remove_audio(audio_copy)
+        except Exception:
+            pass
+        finally:
+            # Borramos del servidor
+            result = remove_record(audio_copy.path)
+            if not result:
+                raise Exception(response_audio_not_delete)
+
         return HttpResponse(status=204)
     else:
         return JSONResponse(response_data_not_method,
@@ -190,19 +216,27 @@ def audio_site_create(request, site_id):
         actor = Actor.objects.all()[0]
         data['actor'] = actor.id
         # Fin user de prueba
+        try:
+            data = pruned_serializer_audio_create(data)
+            # Metemos en el audio el site
+            data['site'] = site_id
+            serializer = AudioSerializer(data=data)
 
-        data = pruned_serializer_audio_create(data)
-        # Metemos en el audio el site
-        data['site'] = site_id
-        serializer = AudioSerializer(data=data)
+            # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+            data['path'] = upload_record(data['base64'])
+        except Exception:
+            if 'path' in data:
+                remove_record(data['path'])
+                return JSONResponse(response_data_save, status=400)
+            else:
+                return JSONResponse(response_data_save, status=400)
 
-        # Coger el base 64 y guardar , meter en data['path'] la url que retorne
-        data['path'] = upload_record(data['base64'])
         # Este audio no se guarda en mapbox, en mapbox estará el sitio
 
         if serializer.is_valid():
             serializer.save()
             return JSONResponse(serializer.data, status=201)
+        remove_record(data['path'])
         return JSONResponse(response_data_save, status=400)
 
     else:
