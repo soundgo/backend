@@ -15,12 +15,12 @@
 language: python
 
 python:
-  - 3.6.7
+  - 3.6
 
 sudo: required
 dist: trusty
 addons:
-  postgresql: "10.6"
+  postgresql: "9.6"
 
 services:
   - postgresql
@@ -51,7 +51,7 @@ deploy:
   provider: releases
   api-key:
     secure: $TOKEN_TRAVIS
-  file: "./ZIP_TRAVIS.zip"
+  file: "./$ZIP_TRAVIS.zip"
   skip_cleanup: true
   on:
     branch: $BRANCH_TRAVIS
