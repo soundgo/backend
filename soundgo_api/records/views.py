@@ -9,7 +9,7 @@ from .serializers import AdvertisementSerializer, AudioSerializer
 from datetime import timedelta
 from datetime import datetime
 from django.db import transaction
-from managers.cloudinary_manager import upload_record, remove_record
+from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
 from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
 from copy import deepcopy
@@ -38,7 +38,7 @@ def advertisement_create(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
 
-        # TODO user de prueba. Comprobar que tenga tarjeta de credito
+        # TODO user de prueba. Comprobar que tenga tarjeta de credito, lo crea el usuario autenticado si es anunciante
         actor = Actor.objects.all()[0]
         data['actor'] = actor.id
         # Fin user de prueba
@@ -85,11 +85,13 @@ def advertisement_update_get(request, advertisement_id):
     except Advertisement.DoesNotExist:
         return JSONResponse(response_advertisement_not_found, status=404)
 
+
     if request.method == 'GET':
         serializer = AdvertisementSerializer(advertisement)
         return JSONResponse(serializer.data)
 
     elif request.method == 'PUT':
+        # Todo poner que el que lo modifica es el mismo que lo crea
         if advertisement.isDelete is True:
             return JSONResponse(response_data_deleted, status=400)
 
@@ -122,12 +124,13 @@ def audio_create(request):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
+    response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
 
     if request.method == 'POST':
         print(request)
         data = JSONParser().parse(request)
 
-        # TODO user de prueba
+        # TODO user de prueba, poner que el que lo crea es el usuario autenticado
         actor = Actor.objects.all()[0]
         data['actor'] = actor.id
         # Fin user de prueba
@@ -145,12 +148,24 @@ def audio_create(request):
             else:
                 return JSONResponse(response_data_save, status=400)
 
+        # Ver si cumple los tiempos
+        duration = get_record_duration(data['path'])
+        if actor.minutes < duration:
+            remove_record(data['path'])
+            return JSONResponse(response_data_not_minutes, status=400)
+        else:
+            actor.minutes = actor.minutes - duration
+
         if serializer.is_valid():
             # Save in db
             audio = serializer.save()
             # Save in Firebase Cloud Firestore
             add_audio(audio)
-            return JSONResponse(serializer.data, status=201)
+            #Save actor with new minutes
+            actor.save()
+            data_aux = serializer.data
+            data_aux["category"] = audio.category.name
+            return JSONResponse(data_aux, status=201)
         remove_record(data['path'])
         return JSONResponse(response_data_save, status=400)
     else:
@@ -173,9 +188,12 @@ def audio_delete_get(request, audio_id):
 
     if request.method == 'GET':
         serializer = AudioSerializer(audio)
-        return JSONResponse(serializer.data)
+        data_aux = serializer.data
+        data_aux["category"] = audio.category.name
+        return JSONResponse(data_aux)
 
     elif request.method == 'DELETE':
+        # Todo Solo lo puede borrar el creador del audio o un administrador
         audio_copy = deepcopy(audio)
         audio.delete()
         # Remove audio from Firebase Cloud Firestore
@@ -203,6 +221,7 @@ def audio_site_create(request, site_id):
 
     response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
+    response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
 
     try:
         Site.objects.get(pk=site_id)
@@ -212,12 +231,12 @@ def audio_site_create(request, site_id):
     if request.method == 'POST':
         data = JSONParser().parse(request)
 
-        # TODO user de prueba
+        # TODO user de prueba, el creador del audio es el usuario autenticado
         actor = Actor.objects.all()[0]
         data['actor'] = actor.id
         # Fin user de prueba
         try:
-            data = pruned_serializer_audio_create(data)
+            data = pruned_serializer_audio_create_site(data, site_id)
             # Metemos en el audio el site
             data['site'] = site_id
             serializer = AudioSerializer(data=data)
@@ -231,11 +250,23 @@ def audio_site_create(request, site_id):
             else:
                 return JSONResponse(response_data_save, status=400)
 
+        # Ver si cumple los tiempos
+        duration = get_record_duration(data['path'])
+        if actor.minutes < duration:
+            remove_record(data['path'])
+            return JSONResponse(response_data_not_minutes, status=400)
+        else:
+            actor.minutes = actor.minutes - duration
+
+
         # Este audio no se guarda en mapbox, en mapbox estará el sitio
 
         if serializer.is_valid():
-            serializer.save()
-            return JSONResponse(serializer.data, status=201)
+            audio = serializer.save()
+            actor.save()
+            data_aux = serializer.data
+            data_aux["category"] = audio.category.name
+            return JSONResponse(data_aux, status=201)
         remove_record(data['path'])
         return JSONResponse(response_data_save, status=400)
 
@@ -281,6 +312,67 @@ def audio_site_category_get(request, site_id):
                             status=400)
 
 
+@csrf_exempt
+@transaction.atomic
+def audio_listen(request, audio_id):
+
+    response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == 'PUT':
+
+        try:
+            audio = Audio.objects.get(pk=audio_id)
+        except Audio.DoesNotExist:
+            return JSONResponse(response_audio_not_found, status=404)
+
+        audio.numberReproductions = audio.numberReproductions + 1
+
+        # Save the audio
+        audio.save()
+
+        return HttpResponse(status=204)
+    else:
+        return JSONResponse(response_data_not_method,
+                            status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def advertisement_listen(request, advertisement_id):
+
+    response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND", "details": "The advertisement does not exit"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == "PUT":
+
+        try:
+            audio = Advertisement.objects.get(pk=advertisement_id)
+        except Audio.DoesNotExist:
+            return JSONResponse(response_advertisement_not_found, status=404)
+
+            # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
+            # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
+            #  y si es la primera vez que lo escuchas se crea un reproduction
+            # TODO  (PROPUESTA) si el usuario es un administrador o es el mismo creador del audio debe poder escucharlo siempre y no se suma ni reproducciones ni minutos.
+        actor = Actor.objects.all()[0]
+
+        audio.numberReproductions = audio.numberReproductions + 1
+
+        duration = get_record_duration(audio.path)
+
+        actor.minutes = actor.minutes + duration
+
+        # Save the audio
+        audio.save()
+        actor.save()
+
+        return HttpResponse(status=204)
+    else:
+        return JSONResponse(response_data_not_method,
+                            status=400)
+
+
 # Metodos auxiliares
 def pruned_serializer_advertisement_update(advertisement, data):
     data["latitude"] = advertisement.latitude
@@ -308,5 +400,18 @@ def pruned_serializer_audio_create(data):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data['category'] = get_object_or_404(Category, name=data['category']).pk
-    data['language'] = get_object_or_404(Actor, pk=data['actor']).language.pk
+    return data
+
+
+def pruned_serializer_audio_create_site(data, site_id):
+    site = Site.objects.get(pk=site_id)
+    time_now = datetime.now()
+    time = time_now + timedelta(seconds=get_object_or_404(Category, name=data['category']).minDurationMap)
+    data['latitude'] = site.latitude
+    data['longitude'] = site.longitude
+    data['timestampFinish'] = time
+    data['timestampCreation'] = time_now
+    data['isInappropriate'] = False
+    data["numberReproductions"] = 0
+    data['category'] = get_object_or_404(Category, name=data['category']).pk
     return data

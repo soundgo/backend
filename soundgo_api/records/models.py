@@ -3,7 +3,6 @@ from django.db import models
 from accounts.models import Actor
 from sites.models import Site
 from tags.models import Tag
-from accounts.models import Language
 
 
 class Record(models.Model):
@@ -19,7 +18,6 @@ class Audio(Record):
     site = models.ForeignKey(Site, null=True, blank=True, related_name='records', on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag, blank=True)
     category = models.ForeignKey("Category", on_delete=models.CASCADE)
-    language = models.ForeignKey(Language, on_delete=models.CASCADE)
 
     isInappropriate = models.BooleanField(default=False)
     timestampCreation = models.DateTimeField(auto_now_add=True, editable=False)
