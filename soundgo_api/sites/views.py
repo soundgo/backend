@@ -7,6 +7,7 @@ from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
 from managers.firebase_manager import add_site, remove_site
+from copy import deepcopy
 
 
 class JSONResponse(HttpResponse):
@@ -79,9 +80,10 @@ def site_update_delete_get(request, site_id):
 
     elif request.method == 'DELETE':
         # Remove site from Firebase Cloud Firestore
-        remove_site(site)
+        site_copy = deepcopy(site)
         # Remove site from db
         site.delete()
+        remove_site(site_copy)
         return HttpResponse(status=204)
 
     else:
