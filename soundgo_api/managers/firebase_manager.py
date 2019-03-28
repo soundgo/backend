@@ -78,6 +78,7 @@ def add_advertisement(advertisement):
     advertisement_id = advertisement.id
     advertisement_latitude = advertisement.latitude
     advertisement_longitude = advertisement.longitude
+    advertisement_radius = advertisement.radius
 
     data = {
         u'geometry': {
@@ -89,6 +90,7 @@ def add_advertisement(advertisement):
         },
         u'properties': {
             u'id': advertisement_id,
+            u'radius': advertisement_radius
         },
         u'type': u'Feature'
     }
