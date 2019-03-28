@@ -7,6 +7,8 @@ from django.contrib.auth.models import AnonymousUser
 from .models import UserAccount, Actor
 from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
+from django.views.decorators.csrf import csrf_exempt
+from .serializers import ActorSerializer
 
 
 
@@ -71,3 +73,35 @@ def login(request, role):
 
 def logout(request):
     request.user = AnonymousUser()
+
+
+@csrf_exempt
+def actor_get(request, nickname):
+
+
+    response_data_get = {"error": "GET_ACTOR", "details": "There was an error to "
+                                                                     "get the actor"}
+
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_actor_not_found = {"error": "ACTOR_NOT_FOUND",
+                                        "details": "The actor does not exit"}
+
+    try:
+
+        actor = Actor.objects.filter(user_account__nickname= nickname).all()[0]
+    except Exception:
+        return JSONResponse(response_actor_not_found, status=404)
+
+    if request.method == 'GET':
+
+        try:
+
+            serializer = ActorSerializer(actor)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_get, status= 400)
+
+
+        return JSONResponse(serializer.data)
+    else:
+        return JSONResponse(response_data_not_method, status=400)
