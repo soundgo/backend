@@ -32,6 +32,8 @@ urlpatterns = [
     path('sites/', include('sites.urls')),
     # TAGS
     path('tags/', include('tags.urls')),
+    # CONFIGURATION
+    path('configuration/', include('configuration.urls')),
     # JWT
     path('api/token/verify/', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
     path('api/token/', jwt_views.TokenObtainSlidingView.as_view(), name='token_obtain'),
