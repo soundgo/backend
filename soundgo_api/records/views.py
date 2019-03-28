@@ -36,33 +36,39 @@ def advertisement_create(request):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
-        data = JSONParser().parse(request)
 
-        # TODO user de prueba. Comprobar que tenga tarjeta de credito, lo crea el usuario autenticado si es anunciante
-        actor = Actor.objects.all()[0]
-        data['actor'] = actor.id
-        # Fin user de prueba
-
-        # coger el base 64 y guardar , meter en data['path'] la url que retorne
         try:
-            data['path'] = upload_record(data['base64'])
-            data = pruned_serializer_advertisement_create(data)
-            serializer = AdvertisementSerializer(data=data)
-        except Exception:
-            if 'path' in data:
-                remove_record(data['path'])
-                return JSONResponse(response_data_save, status=400)
-            else:
-                return JSONResponse(response_data_save, status=400)
 
-        if serializer.is_valid():
-            # Save in db
-            advertisement = serializer.save()
-            # Save in Firebase Cloud Firestore
-            add_advertisement(advertisement)
-            return JSONResponse(serializer.data, status=201)
-        remove_record(data['path'])
-        return JSONResponse(response_data_save, status=400)
+            data = JSONParser().parse(request)
+
+            # TODO user de prueba. Comprobar que tenga tarjeta de credito, lo crea el usuario autenticado si es anunciante
+            actor = Actor.objects.all()[0]
+            data['actor'] = actor.id
+            # Fin user de prueba
+
+            # coger el base 64 y guardar , meter en data['path'] la url que retorne
+            try:
+                data['path'] = upload_record(data['base64'])
+                data = pruned_serializer_advertisement_create(data)
+                serializer = AdvertisementSerializer(data=data)
+            except Exception:
+                if 'path' in data:
+                    remove_record(data['path'])
+                    return JSONResponse(response_data_save, status=400)
+                else:
+                    return JSONResponse(response_data_save, status=400)
+
+            if serializer.is_valid():
+                # Save in db
+                advertisement = serializer.save()
+                # Save in Firebase Cloud Firestore
+                add_advertisement(advertisement)
+                return JSONResponse(serializer.data, status=201)
+            remove_record(data['path'])
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(response_data_save, status=400)
 
     else:
         return JSONResponse(response_data_not_method,
@@ -85,34 +91,39 @@ def advertisement_update_get(request, advertisement_id):
     except Advertisement.DoesNotExist:
         return JSONResponse(response_advertisement_not_found, status=404)
 
-
     if request.method == 'GET':
         serializer = AdvertisementSerializer(advertisement)
         return JSONResponse(serializer.data)
 
     elif request.method == 'PUT':
-        # Todo poner que el que lo modifica es el mismo que lo crea
-        if advertisement.isDelete is True:
-            return JSONResponse(response_data_deleted, status=400)
 
-        data = JSONParser().parse(request)
+        try:
 
-        data = pruned_serializer_advertisement_update(advertisement, data)
-        serializer = AdvertisementSerializer(advertisement, data=data)
-        if serializer.is_valid():
-            serializer.save()
+            # Todo poner que el que lo modifica es el mismo que lo crea
+            if advertisement.isDelete is True:
+                return JSONResponse(response_data_deleted, status=400)
 
-            # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
-            if data['isDelete']:
-                # Borrar grabacion de servidor
-                result = remove_record(advertisement.path)
-                if not result:
-                    raise Exception(response_data_put)
-                # Remove advertisement from Firebase Cloud Firestore
-                remove_advertisement(advertisement)
+            data = JSONParser().parse(request)
 
-            return JSONResponse(serializer.data)
-        return JSONResponse(response_data_put, status=400)
+            data = pruned_serializer_advertisement_update(advertisement, data)
+            serializer = AdvertisementSerializer(advertisement, data=data)
+            if serializer.is_valid():
+                serializer.save()
+
+                # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
+                if data['isDelete']:
+                    # Borrar grabacion de servidor
+                    result = remove_record(advertisement.path)
+                    if not result:
+                        raise Exception(response_data_put)
+                    # Remove advertisement from Firebase Cloud Firestore
+                    remove_advertisement(advertisement)
+
+                return JSONResponse(serializer.data)
+            return JSONResponse(response_data_put, status=400)
+
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(response_data_put, status=400)
     else:
         return JSONResponse(response_data_not_method, status=400)
 
@@ -127,47 +138,53 @@ def audio_create(request):
     response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
 
     if request.method == 'POST':
-        print(request)
-        data = JSONParser().parse(request)
 
-        # TODO user de prueba, poner que el que lo crea es el usuario autenticado
-        actor = Actor.objects.all()[0]
-        data['actor'] = actor.id
-        # Fin user de prueba
-
-        # Coger el base 64 y guardar , meter en data['path'] la url que retorne
         try:
-            data['path'] = upload_record(data['base64'])
 
-            data = pruned_serializer_audio_create(data)
-            serializer = AudioSerializer(data=data)
-        except Exception:
-            if 'path' in data:
+            print(request)
+            data = JSONParser().parse(request)
+
+            # TODO user de prueba, poner que el que lo crea es el usuario autenticado
+            actor = Actor.objects.all()[0]
+            data['actor'] = actor.id
+            # Fin user de prueba
+
+            # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+            try:
+                data['path'] = upload_record(data['base64'])
+
+                data = pruned_serializer_audio_create(data)
+                serializer = AudioSerializer(data=data)
+            except Exception:
+                if 'path' in data:
+                    remove_record(data['path'])
+                    return JSONResponse(response_data_save, status=400)
+                else:
+                    return JSONResponse(response_data_save, status=400)
+
+            # Ver si cumple los tiempos
+            duration = get_record_duration(data['path'])
+            if actor.minutes < duration:
                 remove_record(data['path'])
-                return JSONResponse(response_data_save, status=400)
+                return JSONResponse(response_data_not_minutes, status=400)
             else:
-                return JSONResponse(response_data_save, status=400)
+                actor.minutes = actor.minutes - duration
 
-        # Ver si cumple los tiempos
-        duration = get_record_duration(data['path'])
-        if actor.minutes < duration:
+            if serializer.is_valid():
+                # Save in db
+                audio = serializer.save()
+                # Save in Firebase Cloud Firestore
+                add_audio(audio)
+                #Save actor with new minutes
+                actor.save()
+                data_aux = serializer.data
+                data_aux["category"] = audio.category.name
+                return JSONResponse(data_aux, status=201)
             remove_record(data['path'])
-            return JSONResponse(response_data_not_minutes, status=400)
-        else:
-            actor.minutes = actor.minutes - duration
+            return JSONResponse(response_data_save, status=400)
 
-        if serializer.is_valid():
-            # Save in db
-            audio = serializer.save()
-            # Save in Firebase Cloud Firestore
-            add_audio(audio)
-            #Save actor with new minutes
-            actor.save()
-            data_aux = serializer.data
-            data_aux["category"] = audio.category.name
-            return JSONResponse(data_aux, status=201)
-        remove_record(data['path'])
-        return JSONResponse(response_data_save, status=400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(response_data_save, status=400)
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -229,50 +246,55 @@ def audio_site_create(request, site_id):
         return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'POST':
-        data = JSONParser().parse(request)
 
-        # TODO user de prueba, el creador del audio es el usuario autenticado
-        actor = Actor.objects.all()[0]
-        data['actor'] = actor.id
-        # Fin user de prueba
         try:
-            data = pruned_serializer_audio_create_site(data, site_id)
-            # Metemos en el audio el site
-            data['site'] = site_id
-            serializer = AudioSerializer(data=data)
 
-            # Coger el base 64 y guardar , meter en data['path'] la url que retorne
-            data['path'] = upload_record(data['base64'])
-        except Exception:
-            if 'path' in data:
+            data = JSONParser().parse(request)
+
+            # TODO user de prueba, el creador del audio es el usuario autenticado
+            actor = Actor.objects.all()[0]
+            data['actor'] = actor.id
+            # Fin user de prueba
+            try:
+                data = pruned_serializer_audio_create_site(data, site_id)
+                # Metemos en el audio el site
+                data['site'] = site_id
+                serializer = AudioSerializer(data=data)
+
+                # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+                data['path'] = upload_record(data['base64'])
+            except Exception:
+                if 'path' in data:
+                    remove_record(data['path'])
+                    return JSONResponse(response_data_save, status=400)
+                else:
+                    return JSONResponse(response_data_save, status=400)
+
+            # Ver si cumple los tiempos
+            duration = get_record_duration(data['path'])
+            if actor.minutes < duration:
                 remove_record(data['path'])
-                return JSONResponse(response_data_save, status=400)
+                return JSONResponse(response_data_not_minutes, status=400)
             else:
-                return JSONResponse(response_data_save, status=400)
+                actor.minutes = actor.minutes - duration
 
-        # Ver si cumple los tiempos
-        duration = get_record_duration(data['path'])
-        if actor.minutes < duration:
+
+            # Este audio no se guarda en mapbox, en mapbox estará el sitio
+
+            if serializer.is_valid():
+                audio = serializer.save()
+                actor.save()
+                data_aux = serializer.data
+                data_aux["category"] = audio.category.name
+                return JSONResponse(data_aux, status=201)
             remove_record(data['path'])
-            return JSONResponse(response_data_not_minutes, status=400)
-        else:
-            actor.minutes = actor.minutes - duration
+            return JSONResponse(response_data_save, status=400)
 
-
-        # Este audio no se guarda en mapbox, en mapbox estará el sitio
-
-        if serializer.is_valid():
-            audio = serializer.save()
-            actor.save()
-            data_aux = serializer.data
-            data_aux["category"] = audio.category.name
-            return JSONResponse(data_aux, status=201)
-        remove_record(data['path'])
-        return JSONResponse(response_data_save, status=400)
+        except Exception  or KeyError or ValueError as e:
+            return JSONResponse(response_data_save, status=400)
 
     else:
-        return JSONResponse(response_data_not_method,
-                            status=400)
+        return JSONResponse(response_data_not_method, status=400)
 
 
 # Método para obtener listado de audios de un sitio que pertenece a una categoría concreta
@@ -288,6 +310,7 @@ def audio_site_category_get(request, site_id):
         return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'GET':
+
         category_names = request.GET.get('categories')
 
         audios_list = []
@@ -308,8 +331,7 @@ def audio_site_category_get(request, site_id):
         return JSONResponse(serializer.data)
 
     else:
-        return JSONResponse(response_data_not_method,
-                            status=400)
+        return JSONResponse(response_data_not_method, status=400)
 
 
 @csrf_exempt
@@ -318,6 +340,7 @@ def audio_listen(request, audio_id):
 
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_data_save = {"error": "LISTEN_AUDIO", "details": "There was an error to listen audio"}
 
     if request.method == 'PUT':
 
@@ -326,12 +349,18 @@ def audio_listen(request, audio_id):
         except Audio.DoesNotExist:
             return JSONResponse(response_audio_not_found, status=404)
 
-        audio.numberReproductions = audio.numberReproductions + 1
+        try:
 
-        # Save the audio
-        audio.save()
+            audio.numberReproductions = audio.numberReproductions + 1
 
-        return HttpResponse(status=204)
+            # Save the audio
+            audio.save()
+
+            return HttpResponse(status=204)
+
+        except Exception:
+            return JSONResponse(response_data_save, status=400)
+
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -343,6 +372,7 @@ def advertisement_listen(request, advertisement_id):
 
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND", "details": "The advertisement does not exit"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_data_save = {"error": "LISTEN_ADVERTISEMENT", "details": "There was an error to listen advertisement"}
 
     if request.method == "PUT":
 
@@ -351,23 +381,30 @@ def advertisement_listen(request, advertisement_id):
         except Audio.DoesNotExist:
             return JSONResponse(response_advertisement_not_found, status=404)
 
-            # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
-            # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
-            #  y si es la primera vez que lo escuchas se crea un reproduction
-            # TODO  (PROPUESTA) si el usuario es un administrador o es el mismo creador del audio debe poder escucharlo siempre y no se suma ni reproducciones ni minutos.
-        actor = Actor.objects.all()[0]
 
-        audio.numberReproductions = audio.numberReproductions + 1
+        try:
 
-        duration = get_record_duration(audio.path)
+                # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
+                # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
+                #  y si es la primera vez que lo escuchas se crea un reproduction
+                # TODO  (PROPUESTA) si el usuario es un administrador o es el mismo creador del audio debe poder escucharlo siempre y no se suma ni reproducciones ni minutos.
 
-        actor.minutes = actor.minutes + duration
+            actor = Actor.objects.all()[0]
 
-        # Save the audio
-        audio.save()
-        actor.save()
+            audio.numberReproductions = audio.numberReproductions + 1
 
-        return HttpResponse(status=204)
+            duration = get_record_duration(audio.path)
+
+            actor.minutes = actor.minutes + duration
+
+            # Save the audio
+            audio.save()
+            actor.save()
+
+            return HttpResponse(status=204)
+
+        except Exception:
+            return JSONResponse(response_data_save, status=400)
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
