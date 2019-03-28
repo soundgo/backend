@@ -13,6 +13,7 @@ from managers.cloudinary_manager import upload_record, remove_record, get_record
 from accounts.models import Actor
 from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
 from copy import deepcopy
+from configuration.models import Configuration
 
 
 # TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
@@ -433,7 +434,9 @@ def advertisement_listen(request, advertisement_id):
 
             duration = get_record_duration(ad.path)
 
-            actor.minutes = actor.minutes + duration
+            configuration = Configuration.objects.all()[0]
+
+            actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
 
             # Save the audio
             ad.save()
