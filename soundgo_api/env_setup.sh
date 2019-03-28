@@ -28,13 +28,6 @@ echo -e "\n<<<< Populating database >>>>\n"
 python3 manage.py shell -c "from records.models import Category; Category.objects.all().delete();"
 python3 manage.py shell -c "from records.models import Category; category1 = Category.objects.create(name='Leisure', maxTimeRecord=60, minDurationMap=259200); category1.save(); category2 = Category.objects.create(name='Experience', maxTimeRecord=60, minDurationMap=259200); category2.save(); category3 = Category.objects.create(name='Tourism', maxTimeRecord=60, minDurationMap=259200); category3.save();"
 
-python3 manage.py shell -c "from languages.models import Language; Language.objects.all().delete();"
-python3 manage.py shell -c "from languages.models import Language; language1 = Language.objects.create(name='Spanish'); language1.save(); language2 = Language.objects.create(name='French');
-language2.save(); language3 = Language.objects.create(name='Català'); language3.save(); language4 = Language.objects.create(name='Portuguese'); language4.save();
-language5 = Language.objects.create(name='Italian'); language5.save(); language6 = Language.objects.create(name='German'); language6.save(); language7 = Language.objects.create(name='Japanese');
-language7.save(); language8 = Language.objects.create(name='Chinese'); language8.save(); language9 = Language.objects.create(name='English'); language9.save();
-language10 = Language.objects.create(name='Euskera'); language10.save(); language11 = Language.objects.create(name='Galician'); language11.save();
-language12 = Language.objects.create(name='Arab'); language12.save(); language13 = Language.objects.create(name='Other'); language13.save();"
 
 python3 manage.py shell -c "from configuration.models import Configuration; Configuration.objects.all().delete();"
 python3 manage.py shell -c "from configuration.models import Configuration; config = Configuration.objects.create(maximum_radius=2000, minimum_radius=20, time_listen_advertisement=3, minimum_reports_ban=10); config.save();"
@@ -46,14 +39,23 @@ echo -e "Database populated"
 echo -e "\n<<<< Creating user >>>>\n"
 
 python3 manage.py shell -c "from accounts.models import UserAccount; UserAccount.objects.all().delete();"
-python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; from accounts.models import Language; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgouser', 'soundgouser'); language = Language.objects.get(name='Other'); actor = Actor.objects.create(user_account=user_account, email='soundgouser@email.com', language=language); actor.save();"
+python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgouser', 'soundgouser'); actor = Actor.objects.create(user_account=user_account, email='soundgouser@email.com'); actor.save();"
 
 echo -e "User created with the following credentials: ['soundgouser', 'soundgouser']"
+
+###################### CREATE ADVERTISER  ###################
+
+echo -e "\n<<<< Creating advertiser >>>>\n"
+
+python3 manage.py shell -c "from accounts.models import Actor, CreditCard; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgoadvertiser', 'soundgoadvertiser'); credit_card = CreditCard.objects.create(holderName = 'Carlos Mallado', brandName= 'MASTERCARD', number= '5364212315362996', expirationMonth = 7, expirationYear = 21, cvvCode= 841, isDelete= False) ;actor = Actor.objects.create(user_account=user_account, email='soundgoadvertiser@email.com', credit_card = credit_card); actor.save();"
+
+
+echo -e "Advertiser created with the following credentials: ['soundgoadvertiser', 'soundgoadvertiser']"
 
 ###################### CREATE SUPERUSER  ###################
 
 echo -e "\n<<<< Creating superuser >>>>\n"
 
-python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; from accounts.models import Language; UserAccount = get_user_model(); user_account = UserAccount.objects.create_super_user_account('soundgoadmin', 'soundgoadmin'); language = Language.objects.get(name='Other'); actor = Actor.objects.create(user_account=user_account, email='soundgoadmin@email.com', language=language); actor.save();"
+python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_super_user_account('soundgoadmin', 'soundgoadmin'); actor = Actor.objects.create(user_account=user_account, email='soundgoadmin@email.com'); actor.save();"
 
 echo -e "Superuser created with the following credentials: ['soundgoadmin', 'soundgoadmin']\n"

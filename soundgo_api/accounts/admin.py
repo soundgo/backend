@@ -18,7 +18,7 @@ class ActorInline(admin.TabularInline):
     verbose_name_plural = "ACTOR"
     min_num = 1
 
-    fields = ("photo", "email", "minutes", "language")
+    fields = ("photo", "email", "minutes")
 
 
 class UserAccountAdmin(BaseUserAccountAdmin):
