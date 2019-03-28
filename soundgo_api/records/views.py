@@ -81,6 +81,10 @@ def advertisement_update_get(request, advertisement_id):
 
     response_data_put = {"error": "UPDATE_ADVERTISEMENT", "details": "There was an error to "                                                                                                                                                 
                                                                      "update the advertisement"}
+
+    response_data_get = {"error": "GET_ADVERTISEMENT", "details": "There was an error to "
+                                                                     "get the advertisement"}
+
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND",
                                         "details": "The advertisement does not exit"}
@@ -92,7 +96,14 @@ def advertisement_update_get(request, advertisement_id):
         return JSONResponse(response_advertisement_not_found, status=404)
 
     if request.method == 'GET':
-        serializer = AdvertisementSerializer(advertisement)
+
+        try:
+
+            serializer = AdvertisementSerializer(advertisement)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_get, status= 400)
+
         return JSONResponse(serializer.data)
 
     elif request.method == 'PUT':
@@ -115,7 +126,7 @@ def advertisement_update_get(request, advertisement_id):
                     # Borrar grabacion de servidor
                     result = remove_record(advertisement.path)
                     if not result:
-                        raise Exception(response_data_put)
+                        return JSONResponse(response_data_put, status=400)
                     # Remove advertisement from Firebase Cloud Firestore
                     remove_advertisement(advertisement)
 
@@ -196,7 +207,9 @@ def audio_delete_get(request, audio_id):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
-    response_audio_not_delete = {"error": "AUDIO_NOT_DELETE", "details": "The audio can not delete"}
+    response_audio_not_delete = {"error": "AUDIO_NOT_DELETE", "details": "The audio cannot be deleted"}
+    response_audio_get = {"error": "GET_AUDIO", "details": "There was an error to get the audio"}
+    response_audio_delete = {"error": "DELETE_AUDIO", "details": "There was an error to delete the audio"}
 
     try:
         audio = Audio.objects.get(pk=audio_id)
@@ -204,27 +217,41 @@ def audio_delete_get(request, audio_id):
         return JSONResponse(response_audio_not_found, status=404)
 
     if request.method == 'GET':
-        serializer = AudioSerializer(audio)
-        data_aux = serializer.data
-        data_aux["category"] = audio.category.name
+
+        try:
+
+            serializer = AudioSerializer(audio)
+            data_aux = serializer.data
+            data_aux["category"] = audio.category.name
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_audio_get, status=400)
+
         return JSONResponse(data_aux)
 
     elif request.method == 'DELETE':
-        # Todo Solo lo puede borrar el creador del audio o un administrador
-        audio_copy = deepcopy(audio)
-        audio.delete()
-        # Remove audio from Firebase Cloud Firestore
+
         try:
-            remove_audio(audio_copy)
-        except Exception:
-            pass
-        finally:
-            # Borramos del servidor
-            result = remove_record(audio_copy.path)
-            if not result:
-                raise Exception(response_audio_not_delete)
+
+            # Todo Solo lo puede borrar el creador del audio o un administrador
+            audio_copy = deepcopy(audio)
+            audio.delete()
+            # Remove audio from Firebase Cloud Firestore
+            try:
+                remove_audio(audio_copy)
+            except Exception:
+                pass
+            finally:
+                # Borramos del servidor
+                result = remove_record(audio_copy.path)
+                if not result:
+                    return JSONResponse(response_audio_not_delete, status=400)
+
+        except Exception or KeyError or ValueError:
+            return JSONResponse(response_audio_delete, status = 400)
 
         return HttpResponse(status=204)
+
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -303,6 +330,7 @@ def audio_site_category_get(request, site_id):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
     response_category_not_found = {"error": "CATEGORY_NOT_FOUND", "details": "The category does not exist"}
+    response_audio_get = {"error": "GET_AUDIO", "details": "THe was an error to get the audios"}
 
     try:
         site_found = Site.objects.get(pk=site_id)
@@ -311,22 +339,27 @@ def audio_site_category_get(request, site_id):
 
     if request.method == 'GET':
 
-        category_names = request.GET.get('categories')
+        try:
 
-        audios_list = []
-        categories_list = []
-        for category_name in category_names.split(","):
-            try:
+            category_names = request.GET.get('categories')
 
-                category_found = Category.objects.get(name=category_name)
-                categories_list.append(category_found)
-            except Category.DoesNotExist:
-                return JSONResponse(response_category_not_found, status=404)
+            audios_list = []
+            categories_list = []
+            for category_name in category_names.split(","):
+                try:
 
-        audios = Audio.objects.all().filter(category__in=categories_list, site=site_found)
-        audios_list.extend(audios)
+                    category_found = Category.objects.get(name=category_name)
+                    categories_list.append(category_found)
+                except Category.DoesNotExist:
+                    return JSONResponse(response_category_not_found, status=404)
 
-        serializer = AudioSerializer(audios_list, many=True)
+            audios = Audio.objects.all().filter(category__in=categories_list, site=site_found)
+            audios_list.extend(audios)
+
+            serializer = AudioSerializer(audios_list, many=True)
+
+        except Exception or KeyError or ValueError:
+            return JSONResponse(response_audio_get, status= 400)
 
         return JSONResponse(serializer.data)
 
@@ -358,7 +391,7 @@ def audio_listen(request, audio_id):
 
             return HttpResponse(status=204)
 
-        except Exception:
+        except Exception or KeyError or ValueError:
             return JSONResponse(response_data_save, status=400)
 
     else:
@@ -377,13 +410,11 @@ def advertisement_listen(request, advertisement_id):
     if request.method == "PUT":
 
         try:
-            audio = Advertisement.objects.get(pk=advertisement_id)
-        except Audio.DoesNotExist:
+            ad = Advertisement.objects.get(pk=advertisement_id)
+        except Advertisement.DoesNotExist:
             return JSONResponse(response_advertisement_not_found, status=404)
 
-
         try:
-
                 # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
                 # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
                 #  y si es la primera vez que lo escuchas se crea un reproduction
@@ -391,23 +422,23 @@ def advertisement_listen(request, advertisement_id):
 
             actor = Actor.objects.all()[0]
 
-            audio.numberReproductions = audio.numberReproductions + 1
+            ad.numberReproductions = ad.numberReproductions + 1
 
-            duration = get_record_duration(audio.path)
+            duration = get_record_duration(ad.path)
 
             actor.minutes = actor.minutes + duration
 
             # Save the audio
-            audio.save()
+            ad.save()
             actor.save()
 
             return HttpResponse(status=204)
 
-        except Exception:
+        except Exception or ValueError or KeyError:
             return JSONResponse(response_data_save, status=400)
+
     else:
-        return JSONResponse(response_data_not_method,
-                            status=400)
+        return JSONResponse(response_data_not_method, status=400)
 
 
 # Metodos auxiliares

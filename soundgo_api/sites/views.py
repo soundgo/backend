@@ -63,9 +63,13 @@ def site_update_delete_get(request, site_id):
     """
     response_data_put = {"error": "UPDATE_SITE", "details": "There was an error to update the site"}
 
+    response_data_get = {"error": "GET_SITE", "details": "There was an error to get the site"}
+
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
+
+    response_data_delete = {"error": "DELETE_SITE", "details": "There was an error to delete the site"}
 
     try:
         site = Site.objects.get(pk=site_id)
@@ -73,26 +77,47 @@ def site_update_delete_get(request, site_id):
         return JSONResponse(response_site_not_found, status=404)
 
     if request.method == 'GET':
-        serializer = SiteSerializer(site)
+
+        try:
+
+            serializer = SiteSerializer(site)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_get, status=400)
+
         return JSONResponse(serializer.data)
 
     # Todo solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
     elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        data = pruned_serializer_site_update(site, data)
-        serializer = SiteSerializer(site, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JSONResponse(serializer.data)
+
+        try:
+
+            data = JSONParser().parse(request)
+            data = pruned_serializer_site_update(site, data)
+            serializer = SiteSerializer(site, data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return JSONResponse(serializer.data)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_put, status=400)
+
         return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
-        # Remove site from Firebase Cloud Firestore
-        site_copy = deepcopy(site)
-        # Remove site from db
-        site.delete()
-        remove_site(site_copy)
+
+        try:
+
+            # Remove site from Firebase Cloud Firestore
+            site_copy = deepcopy(site)
+            # Remove site from db
+            site.delete()
+            remove_site(site_copy)
+
+        except Exception or KeyError or ValueError:
+            return JSONResponse(response_data_delete, status=400)
+
         return HttpResponse(status=204)
 
     else:
