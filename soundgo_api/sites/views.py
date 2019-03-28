@@ -85,7 +85,11 @@ def site_update_delete_get(request, site_id):
         except Exception or ValueError or KeyError:
             return JSONResponse(response_data_get, status=400)
 
-        return JSONResponse(serializer.data)
+        data_aux = serializer.data
+        data_aux.pop("actor")
+        data_aux["name_actor"] = site.actor.user_account.nickname
+        data_aux["photo"] = site.actor.photo
+        return JSONResponse(data_aux)
 
     # Todo solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
