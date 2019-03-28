@@ -43,6 +43,15 @@ python3 manage.py shell -c "from accounts.models import Actor; from django.contr
 
 echo -e "User created with the following credentials: ['soundgouser', 'soundgouser']"
 
+###################### CREATE ADVERTISER  ###################
+
+echo -e "\n<<<< Creating advertiser >>>>\n"
+
+python3 manage.py shell -c "from accounts.models import Actor, CreditCard; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgoadvertiser', 'soundgoadvertiser'); credit_card = CreditCard.objects.create(holderName = 'Carlos Mallado', brandName= 'MASTERCARD', number= '5364212315362996', expirationMonth = 7, expirationYear = 21, cvvCode= 841, isDelete= False) ;actor = Actor.objects.create(user_account=user_account, email='soundgoadvertiser@email.com', credit_card = credit_card); actor.save();"
+
+
+echo -e "Advertiser created with the following credentials: ['soundgoadvertiser', 'soundgoadvertiser']"
+
 ###################### CREATE SUPERUSER  ###################
 
 echo -e "\n<<<< Creating superuser >>>>\n"
