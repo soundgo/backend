@@ -104,7 +104,11 @@ def advertisement_update_get(request, advertisement_id):
         except Exception or ValueError or KeyError:
             return JSONResponse(response_data_get, status= 400)
 
-        return JSONResponse(serializer.data)
+        data_aux = serializer.data
+        data_aux.pop('actor')
+        data_aux["name"] = advertisement.actor.user_account.nickname
+        data_aux["photo"] = advertisement.actor.photo
+        return JSONResponse(data_aux)
 
     elif request.method == 'PUT':
 
@@ -223,6 +227,9 @@ def audio_delete_get(request, audio_id):
             serializer = AudioSerializer(audio)
             data_aux = serializer.data
             data_aux["category"] = audio.category.name
+            data_aux.pop("actor")
+            data_aux["name"] = audio.actor.user_account.nickname
+            data_aux["photo"] = audio.actor.photo
 
         except Exception or ValueError or KeyError:
             return JSONResponse(response_audio_get, status=400)
