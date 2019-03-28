@@ -87,9 +87,9 @@ def actor_get(request, nickname):
                                         "details": "The actor does not exit"}
 
     try:
-        userAccount = UserAccount.objects.get(nickname=nickname)
-        actor = Actor.objects.get(user_account= userAccount)
-    except Actor.DoesNotExist:
+
+        actor = Actor.objects.filter(user_account__nickname= nickname).all()[0]
+    except Exception:
         return JSONResponse(response_actor_not_found, status=404)
 
     if request.method == 'GET':
