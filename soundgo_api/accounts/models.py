@@ -58,7 +58,7 @@ class Actor(models.Model):
     photo = models.CharField('Photo', max_length=800, blank=True)
     email = models.EmailField('Email', max_length=255, blank=False)
     minutes = models.PositiveIntegerField('Minutes (s)', default=300)
-    credit_card = models.ForeignKey("CreditCard", on_delete=models.SET_NULL, null = True)
+    credit_card = models.ForeignKey("CreditCard", on_delete=models.SET_NULL, null = True, blank= True)
 
     class Meta:
         db_table = 'actor'
