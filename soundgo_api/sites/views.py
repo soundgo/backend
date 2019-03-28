@@ -29,21 +29,28 @@ def site_create(request):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
-        data = JSONParser().parse(request)
 
-        # TODO user de prueba, para que se cree tiene que ser un usuario con tarjeta o ser administrador
-        actor = Actor.objects.all()[0]
-        data['actor'] = actor.id
-        # Fin user de prueba
+        try:
 
-        serializer = SiteSerializer(data=data)
-        if serializer.is_valid():
-            # Save in db
-            site = serializer.save()
-            # Save in Firebase Cloud Firestore
-            add_site(site)
-            return JSONResponse(serializer.data, status=201)
-        return JSONResponse(response_data_save, status=400)
+            data = JSONParser().parse(request)
+
+            # TODO user de prueba, para que se cree tiene que ser un usuario con tarjeta o ser administrador
+            actor = Actor.objects.all()[0]
+            data['actor'] = actor.id
+            # Fin user de prueba
+
+            serializer = SiteSerializer(data=data)
+            if serializer.is_valid():
+                # Save in db
+                site = serializer.save()
+                # Save in Firebase Cloud Firestore
+                add_site(site)
+                return JSONResponse(serializer.data, status=201)
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_save, status=400)
+
     else:
         return JSONResponse(response_data_not_method, status=400)
 
