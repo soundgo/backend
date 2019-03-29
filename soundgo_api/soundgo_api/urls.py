@@ -16,8 +16,8 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include
-from rest_framework_simplejwt import views as jwt_views
 from django.urls import path
+from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token, verify_jwt_token
 
 admin.site.site_header = "SoundGo administration"
 
@@ -32,8 +32,10 @@ urlpatterns = [
     path('sites/', include('sites.urls')),
     # TAGS
     path('tags/', include('tags.urls')),
+    # CONFIGURATION
+    path('configuration/', include('configuration.urls')),
     # JWT
-    path('api/token/verify/', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
-    path('api/token/', jwt_views.TokenObtainSlidingView.as_view(), name='token_obtain'),
-    path('api/token/refresh/', jwt_views.TokenRefreshSlidingView.as_view(), name='token_refresh'),
+    path('api-token-auth/', obtain_jwt_token),
+    path('api-token-refresh/', refresh_jwt_token),
+    path('api-token-verify/', verify_jwt_token),
 ]

@@ -1,0 +1,62 @@
+#############################################################
+##                    ENVIRONMENT VARIABLES                ##
+##                                                         ##
+## RELEASE_TRAVIS ------> 1 to activate automatic releases ##
+## USER_TRAVIS ---------> GitHub user                      ##
+## EMAIL_TRAVIS --------> GitHub email                     ##
+## BRANCH_TRAVIS -------> branch for releases (master)     ##
+## TOKEN_TRAVIS --------> GitHub personal token            ##
+## ZIP_TRAVIS ----------> release zip name (soundgo.zip)   ##
+## VERSION_TRAVIS ------> release version                  ##
+## SUBVERSION_TRAVIS ---> release subversion               ##
+## SPRINT_TRAVIS -------> sprint id                        ##
+#############################################################
+
+language: python
+
+python:
+  - 3.6
+
+sudo: required
+dist: trusty
+addons:
+  postgresql: "9.6"
+
+services:
+  - postgresql
+
+env:
+  - DJANGO_SETTINGS_MODULE="soundgo_api.settings"
+
+install:
+  - pip install -r requirements.txt
+
+before_script:
+  - psql -c "create user soundgo with password 'soundgo'" -U postgres
+  - psql -c "create database soundgo owner soundgo" -U postgres
+
+script:
+  - python ./soundgo_api/manage.py makemigrations
+  - python ./soundgo_api/manage.py migrate
+  - python ./soundgo_api/manage.py test ./soundgo_api
+  - if [[ $TRAVIS_BRANCH == $BRANCH_TRAVIS ]] && [[ $RELEASE_TRAVIS == "1" ]]; then git archive --format zip --output ./$ZIP_TRAVIS.zip $BRANCH_TRAVIS; echo "Source code generated properly."; fi
+
+before_deploy:
+- git config --local user.name $USER_TRAVIS
+- git config --local user.email $EMAIL_TRAVIS
+- export GIT_TAG=SoundGo-v.$VERSION_TRAVIS.$SUBVERSION_TRAVIS.$SPRINT_TRAVIS.$TRAVIS_BUILD_NUMBER
+- git tag -a $GIT_TAG -m "Generated tag from TravisCI build $TRAVIS_BUILD_NUMBER"
+
+deploy:
+  provider: releases
+  api-key:
+    secure: $TOKEN_TRAVIS
+  file: "./$ZIP_TRAVIS.zip"
+  skip_cleanup: true
+  on:
+    branch: $BRANCH_TRAVIS
+    condition: $RELEASE_TRAVIS = 1
+    tags: false
+
+notifications:
+  email: false

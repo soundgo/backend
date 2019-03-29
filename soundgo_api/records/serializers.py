@@ -11,7 +11,7 @@ class AudioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Audio
         fields = ('id', 'actor', 'latitude', 'longitude', 'numberReproductions', 'path', 'isInappropriate', 'timestampCreation',
-                  'timestampFinish', 'category', 'site', 'tags', 'language')
+                  'timestampFinish', 'category', 'site', 'tags')
 
 
 class AdvertisementSerializer(serializers.ModelSerializer):

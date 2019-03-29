@@ -1,10 +1,11 @@
 from rest_framework import serializers
 
+from .models import Actor
 
-from .models import Language
 
-
-class LanguageSerializer(serializers.ModelSerializer):
+class ActorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Language
-        fields = ('id', 'name')
+        model = Actor
+        fields = ('id', 'user_account', 'photo', 'email', 'minutes', 'credit_card')
+
+

@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 
 from .forms import UserAccountAdminCreationForm, UserAccountAdminChangeForm
 
-from .models import Actor, Language, SoundGoConfig
+from .models import Actor
 
 UserAccount = get_user_model()
 
@@ -18,7 +18,7 @@ class ActorInline(admin.TabularInline):
     verbose_name_plural = "ACTOR"
     min_num = 1
 
-    fields = ("photo", "email", "minutes", "language")
+    fields = ("photo", "email", "minutes")
 
 
 class UserAccountAdmin(BaseUserAccountAdmin):
@@ -58,26 +58,5 @@ class UserAccountAdmin(BaseUserAccountAdmin):
     filter_horizontal = ()
 
 
-class LanguageAdmin(admin.ModelAdmin):
-
-    actions = []
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-class ConfigurationAdmin(admin.ModelAdmin):
-
-    actions = []
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.unregister(Group)
-admin.site.register(Language, LanguageAdmin)
-admin.site.register(SoundGoConfig, ConfigurationAdmin)

@@ -50,28 +50,15 @@ class UserAccount(AbstractBaseUser):
         return self.admin
 
 
-class Language(models.Model):
-    name = models.CharField('Name', max_length=200)
-
-    class Meta:
-        db_table = 'language'
-        verbose_name = 'Language'
-        verbose_name_plural = 'Languages'
-
-    def __str__(self):
-        return "%s" % self.name
-
-
 class Actor(models.Model):
 
     user_account = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='actor',
                                         verbose_name='User account')
-    language = models.ForeignKey(Language, on_delete=models.CASCADE,
-                                 verbose_name='Language')
 
     photo = models.CharField('Photo', max_length=800, blank=True)
     email = models.EmailField('Email', max_length=255, blank=False)
     minutes = models.PositiveIntegerField('Minutes (s)', default=300)
+    credit_card = models.ForeignKey("CreditCard", on_delete=models.SET_NULL, null = True, blank= True)
 
     class Meta:
         db_table = 'actor'
@@ -81,17 +68,17 @@ class Actor(models.Model):
     def __str__(self):
         return "%s" % self.email
 
+class CreditCard(models.Model):
 
-class SoundGoConfig(models.Model):
-    maximum_radius = models.PositiveIntegerField('Maximum Radius (m)', default=2000)
-    minimum_radius = models.PositiveIntegerField('Minimum Radius (m)', default=20)
-    time_listen_advertisement = models.FloatField('Time gained to listen an advertisement', default=3)
-    minimum_reports_ban = models.PositiveIntegerField('Minimum reports to ban an audio', default=10)
+    holderName = models.CharField(blank=False, max_length=255)
+    brandName = models.CharField(blank=False, max_length=255)
+    number = models.CharField(blank=False, max_length=255)
+    expirationMonth = models.IntegerField()
+    expirationYear = models.IntegerField()
+    cvvCode = models.IntegerField()
+    isDelete = models.BooleanField(default=False)
 
     class Meta:
-        db_table = 'sound_go_config'
-        verbose_name = 'Configuration'
-        verbose_name_plural = 'Configurations'
-
-    def __str__(self):
-        return "Configuration"
+        db_table = 'credit_card'
+        verbose_name = 'Credit card'
+        verbose_name_plural = 'Credit cards'
