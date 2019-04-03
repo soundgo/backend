@@ -79,6 +79,20 @@ class Like(models.Model):
         return 'Like'
 
 
+class Report(models.Model):
+    actor = models.ForeignKey(Actor, null=False, on_delete=models.CASCADE, related_name='reports')
+    audio = models.ForeignKey(Audio, null=False, on_delete=models.CASCADE, related_name='reports')
+
+    class Meta:
+        db_table = 'report'
+        verbose_name = 'Report'
+        verbose_name_plural = 'Reports'
+        unique_together = ('actor', 'audio',)
+
+    def __str__(self):
+        return "Report"
+
+
 # ################################################## #
 # #############        SIGNALS        ############## #
 # ################################################## #
