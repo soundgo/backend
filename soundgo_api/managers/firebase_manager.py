@@ -55,6 +55,7 @@ def add_audio(audio):
     audio_category = audio.category.name
     audio_latitude = audio.latitude
     audio_longitude = audio.longitude
+    audio_actor = audio.actor.id
 
     data = {
         u'geometry': {
@@ -66,6 +67,7 @@ def add_audio(audio):
         },
         u'properties': {
             u'id': audio_id,
+            u'actorId': audio_actor,
             u'type': audio_category
         },
         u'type': u'Feature'
@@ -80,6 +82,7 @@ def add_advertisement(advertisement):
     advertisement_latitude = advertisement.latitude
     advertisement_longitude = advertisement.longitude
     advertisement_radius = advertisement.radius
+    advertisement_actor = advertisement.actor.id
 
     data = {
         u'geometry': {
@@ -91,6 +94,7 @@ def add_advertisement(advertisement):
         },
         u'properties': {
             u'id': advertisement_id,
+            u'actorId': advertisement_actor,
             u'radius': advertisement_radius
         },
         u'type': u'Feature'
@@ -105,6 +109,7 @@ def add_site(site):
     site_name = site.name
     site_latitude = site.latitude
     site_longitude = site.longitude
+    site_actor = site.actor.id
 
     data = {
         u'geometry': {
@@ -116,6 +121,7 @@ def add_site(site):
         },
         u'properties': {
             u'id': site_id,
+            u'actorId': site_actor,
             u'name': site_name
         },
         u'type': u'Feature'
