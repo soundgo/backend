@@ -3,9 +3,9 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from .models import Advertisement, Audio, Category, Like
+from .models import Advertisement, Audio, Category, Like, Report
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer
+from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer
 from datetime import datetime
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
@@ -211,7 +211,6 @@ def audio_delete_get(request, audio_id):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
-    response_audio_not_delete = {"error": "AUDIO_NOT_DELETE", "details": "The audio cannot be deleted"}
     response_audio_get = {"error": "GET_AUDIO", "details": "There was an error to get the audio"}
     response_audio_delete = {"error": "DELETE_AUDIO", "details": "There was an error to delete the audio"}
 
@@ -231,6 +230,13 @@ def audio_delete_get(request, audio_id):
             data_aux["name"] = audio.actor.user_account.nickname
             data_aux["photo"] = audio.actor.photo
             data_aux["likes"] = len(Like.objects.filter(audio=audio_id))
+            data_aux["reported"] = False
+            login_result = login(request, 'advertiserUser')
+
+            if login_result is True:
+                report = Report.objects.filter(audio=audio.id).filter(actor=request.user.id)
+                if not report:
+                    data_aux["reported"] = True
 
         except Exception or ValueError or KeyError:
             return JSONResponse(response_audio_get, status=400)
@@ -510,6 +516,44 @@ def like_create(request, audio_id):
                 # Save in db
                 serializer.save()
                 audio.save()
+                return JSONResponse(serializer.data, status=201)
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_save, status=400)
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def report_create(request, audio_id):
+
+    response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the report"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == 'POST':
+
+        login_result = login(request, 'advertiserUser')
+        if login_result is not True:
+            return login_result
+
+        try:
+            configuration = Configuration.objects.all()[0]
+            data = {}
+            data['actor'] = request.user.id
+            # Fin user de prueba
+            data['audio'] = audio_id
+            serializer = ReportSerializer(data=data)
+            if serializer.is_valid():
+                # Save in db
+                report = serializer.save()
+                reports = Report.objects.filter(audio=audio_id)
+                if len(reports) >= configuration.minimum_reports_ban and report.audio.isInappropriate is False:
+                    audio = report.audio
+                    audio.isInappropriate = True
+                    audio.save()
                 return JSONResponse(serializer.data, status=201)
             return JSONResponse(response_data_save, status=400)
 

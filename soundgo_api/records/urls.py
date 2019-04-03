@@ -26,6 +26,7 @@ urlpatterns = [
     path('audio/site/categories/<int:site_id>/', views.audio_site_category_get),
     path('audio/listen/<int:audio_id>/', views.audio_listen),
     path('advertisement/listen/<int:advertisement_id>/', views.advertisement_listen),
-    path('audio/like/<int:audio_id>/', views.like_create)
+    path('audio/like/<int:audio_id>/', views.like_create),
+    path('audio/report/<int:audio_id>/', views.report_create)
 ]
 
