@@ -226,13 +226,18 @@ def audio_delete_get(request, audio_id):
 
         try:
 
+            login(request, 'all')
             serializer = AudioSerializer(audio)
             data_aux = serializer.data
             data_aux["category"] = audio.category.name
             data_aux.pop("actor")
             data_aux["name"] = audio.actor.user_account.nickname
             data_aux["photo"] = audio.actor.photo
-            data_aux["likes"] = len(Like.objects.filter(audio=audio_id))
+            data_aux["numberLikes"] = len(Like.objects.filter(audio=audio_id))
+            if len(Like.objects.filter(audio=audio_id).filter(actor=request.user.id)) == 0:
+                data_aux["liked"] = False
+            else:
+                data_aux["liked"] = True
 
         except Exception or ValueError or KeyError:
             return JSONResponse(response_audio_get, status=400)
@@ -504,10 +509,10 @@ def like_create(request, audio_id):
     response_data_save = {"error": "SAVE_LIKE", "details": "There was an error to save the like"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
-    if request.method == 'PUT':
+    if request.method == 'POST':
 
-        loginResult = login(request, 'user')
-        if not loginResult:
+        loginResult = login(request, 'advertiserUser')
+        if loginResult != True:
             return loginResult
 
         try:
