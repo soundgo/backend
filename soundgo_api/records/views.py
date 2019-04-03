@@ -3,18 +3,17 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from .models import Advertisement, Audio, Category
+from .models import Advertisement, Audio, Category, Like
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer
-from datetime import timedelta
+from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer
 from datetime import datetime
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
-from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
-from copy import deepcopy
+from accounts.views import login
+from managers.firebase_manager import add_audio, add_advertisement, remove_advertisement
 from configuration.models import Configuration
-
+from datetime import timedelta
 
 # TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
@@ -191,7 +190,7 @@ def audio_create(request):
                 audio = serializer.save()
                 # Save in Firebase Cloud Firestore
                 add_audio(audio)
-                #Save actor with new minutes
+                # Save actor with new minutes
                 actor.save()
                 data_aux = serializer.data
                 data_aux["category"] = audio.category.name
@@ -231,6 +230,7 @@ def audio_delete_get(request, audio_id):
             data_aux.pop("actor")
             data_aux["name"] = audio.actor.user_account.nickname
             data_aux["photo"] = audio.actor.photo
+            data_aux["likes"] = len(Like.objects.filter(audio=audio_id))
 
         except Exception or ValueError or KeyError:
             return JSONResponse(response_audio_get, status=400)
@@ -242,21 +242,10 @@ def audio_delete_get(request, audio_id):
         try:
 
             # Todo Solo lo puede borrar el creador del audio o un administrador
-            audio_copy = deepcopy(audio)
             audio.delete()
-            # Remove audio from Firebase Cloud Firestore
-            try:
-                remove_audio(audio_copy)
-            except Exception:
-                pass
-            finally:
-                # Borramos del servidor
-                result = remove_record(audio_copy.path)
-                if not result:
-                    return JSONResponse(response_audio_not_delete, status=400)
 
         except Exception or KeyError or ValueError:
-            return JSONResponse(response_audio_delete, status = 400)
+            return JSONResponse(response_audio_delete, status=400)
 
         return HttpResponse(status=204)
 
@@ -313,9 +302,6 @@ def audio_site_create(request, site_id):
             else:
                 actor.minutes = actor.minutes - duration
 
-
-            # Este audio no se guarda en mapbox, en mapbox estará el sitio
-
             if serializer.is_valid():
                 audio = serializer.save()
                 actor.save()
@@ -325,7 +311,7 @@ def audio_site_create(request, site_id):
             remove_record(data['path'])
             return JSONResponse(response_data_save, status=400)
 
-        except Exception  or KeyError or ValueError as e:
+        except Exception or KeyError or ValueError as e:
             return JSONResponse(response_data_save, status=400)
 
     else:
@@ -493,3 +479,42 @@ def pruned_serializer_audio_create_site(data, site_id):
     data["numberReproductions"] = 0
     data['category'] = get_object_or_404(Category, name=data['category']).pk
     return data
+
+
+@csrf_exempt
+@transaction.atomic
+def like_create(request, audio_id):
+
+    response_data_save = {"error": "SAVE_LIKE", "details": "There was an error to save the like"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == 'PUT':
+
+        loginResult = login(request, 'user')
+        if not loginResult:
+            return loginResult
+
+        try:
+
+            data = {}
+
+            data['actor'] = request.user.id
+            data['audio'] = audio_id
+
+            serializer = LikeSerializer(data=data)
+
+            audio = Audio.objects.get(id=audio_id)
+            audio.timestampFinish = audio.timestampFinish + timedelta(
+                seconds=Configuration.objects.all()[0].time_extend_audio)
+            if serializer.is_valid():
+                # Save in db
+                serializer.save()
+                audio.save()
+                return JSONResponse(serializer.data, status=201)
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError:
+            return JSONResponse(response_data_save, status=400)
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)

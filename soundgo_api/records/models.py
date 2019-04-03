@@ -4,6 +4,16 @@ from accounts.models import Actor
 from sites.models import Site
 from tags.models import Tag
 
+from django.dispatch import receiver
+from django.db.models.signals import post_delete
+
+from managers.firebase_manager import remove_audio, remove_advertisement
+from managers.cloudinary_manager import remove_record
+
+# ################################################## #
+# ##############        MODELS        ############## #
+# ################################################## #
+
 
 class Record(models.Model):
     actor = models.ForeignKey(Actor, null=False, on_delete=models.CASCADE, related_name='records')
@@ -53,3 +63,50 @@ class Category(models.Model):
 
     def __str__(self):
         return "%s" % self.name
+
+
+class Like(models.Model):
+    audio = models.ForeignKey(Audio, on_delete=models.CASCADE, related_name="audio")
+    actor = models.ForeignKey(Actor, on_delete=models.CASCADE, related_name="actor")
+
+    class Meta:
+        db_table = 'like'
+        verbose_name = 'Like'
+        verbose_name_plural = 'Likes'
+        unique_together = ('actor', 'audio')
+
+    def __str__(self):
+        return 'Like'
+
+
+# ################################################## #
+# #############        SIGNALS        ############## #
+# ################################################## #
+
+@receiver(post_delete, sender=Audio)
+def auto_delete_audio_on_third_party_services(sender, instance, **kwargs):
+
+    """
+    Signal to delete the audio from Cloudinary and Firebase after PostgreSQL deletion.
+    """
+
+    # Delete from Firebase
+    remove_audio(instance)
+
+    # Delete from Cloudinary
+    remove_record(instance.path)
+
+
+@receiver(post_delete, sender=Advertisement)
+def auto_delete_advertisement_on_third_party_services(sender, instance, **kwargs):
+
+    """
+    Signal to delete the advertisement from Cloudinary and Firebase after PostgreSQL deletion.
+    """
+
+    # Delete from Firebase
+    remove_advertisement(instance)
+
+    # Delete from Cloudinary
+    remove_record(instance.path)
+
