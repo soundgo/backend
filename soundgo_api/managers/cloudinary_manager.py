@@ -2,9 +2,9 @@ from cloudinary import config, uploader, api
 import os
 
 config(
-    cloud_name="soundgo",
-    api_key="228652582852825",
-    api_secret="2rRo1h7nIeHkbvfKUqR8j0ApZwE"
+    cloud_name="soundgo2",
+    api_key="868693577684328",
+    api_secret="yMoOjelWJCCNS_4AkyVDAIM6mLw"
 )
 
 
