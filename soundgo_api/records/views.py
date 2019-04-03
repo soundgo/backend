@@ -6,14 +6,12 @@ from rest_framework.parsers import JSONParser
 from .models import Advertisement, Audio, Category, Like
 from sites.models import Site
 from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer
-from datetime import timedelta
 from datetime import datetime
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
 from accounts.views import login
-from managers.firebase_manager import add_audio, add_advertisement, remove_audio, remove_advertisement
-from copy import deepcopy
+from managers.firebase_manager import add_audio, add_advertisement, remove_advertisement
 from configuration.models import Configuration
 from datetime import timedelta
 
@@ -192,7 +190,7 @@ def audio_create(request):
                 audio = serializer.save()
                 # Save in Firebase Cloud Firestore
                 add_audio(audio)
-                #Save actor with new minutes
+                # Save actor with new minutes
                 actor.save()
                 data_aux = serializer.data
                 data_aux["category"] = audio.category.name
@@ -244,21 +242,10 @@ def audio_delete_get(request, audio_id):
         try:
 
             # Todo Solo lo puede borrar el creador del audio o un administrador
-            audio_copy = deepcopy(audio)
             audio.delete()
-            # Remove audio from Firebase Cloud Firestore
-            try:
-                remove_audio(audio_copy)
-            except Exception:
-                pass
-            finally:
-                # Borramos del servidor
-                result = remove_record(audio_copy.path)
-                if not result:
-                    return JSONResponse(response_audio_not_delete, status=400)
 
         except Exception or KeyError or ValueError:
-            return JSONResponse(response_audio_delete, status = 400)
+            return JSONResponse(response_audio_delete, status=400)
 
         return HttpResponse(status=204)
 
@@ -315,9 +302,6 @@ def audio_site_create(request, site_id):
             else:
                 actor.minutes = actor.minutes - duration
 
-
-            # Este audio no se guarda en mapbox, en mapbox estará el sitio
-
             if serializer.is_valid():
                 audio = serializer.save()
                 actor.save()
@@ -327,7 +311,7 @@ def audio_site_create(request, site_id):
             remove_record(data['path'])
             return JSONResponse(response_data_save, status=400)
 
-        except Exception  or KeyError or ValueError as e:
+        except Exception or KeyError or ValueError as e:
             return JSONResponse(response_data_save, status=400)
 
     else:
