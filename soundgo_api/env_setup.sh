@@ -30,7 +30,7 @@ python3 manage.py shell -c "from records.models import Category; category1 = Cat
 
 
 python3 manage.py shell -c "from configuration.models import Configuration; Configuration.objects.all().delete();"
-python3 manage.py shell -c "from configuration.models import Configuration; config = Configuration.objects.create(maximum_radius=2000, minimum_radius=20, time_listen_advertisement=3, minimum_reports_ban=10); config.save();"
+python3 manage.py shell -c "from configuration.models import Configuration; config = Configuration.objects.create(maximum_radius=2000, minimum_radius=20, time_listen_advertisement=3, minimum_reports_ban=10, time_extend_audio=3600); config.save();"
 
 echo -e "Database populated"
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Audio, Advertisement, Category
+from .models import Audio, Advertisement, Category, Like
 
 
 class CategoryAdmin(admin.ModelAdmin):
@@ -17,3 +17,4 @@ class CategoryAdmin(admin.ModelAdmin):
 admin.site.register(Audio)
 admin.site.register(Advertisement)
 admin.site.register(Category, CategoryAdmin)
+admin.site.register(Like)

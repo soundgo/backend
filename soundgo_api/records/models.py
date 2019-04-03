@@ -53,3 +53,18 @@ class Category(models.Model):
 
     def __str__(self):
         return "%s" % self.name
+
+
+class Like(models.Model):
+    audio = models.ForeignKey(Audio, on_delete=models.CASCADE, related_name="audio")
+    actor = models.ForeignKey(Actor, on_delete=models.CASCADE, related_name="actor")
+
+    class Meta:
+        db_table = 'like'
+        verbose_name = 'Like'
+        verbose_name_plural = 'Likes'
+        unique_together = ('actor', 'audio')
+
+    def __str__(self):
+        return 'Like'
+
