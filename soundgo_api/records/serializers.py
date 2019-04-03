@@ -6,6 +6,7 @@ from .models import Audio
 from .models import Advertisement
 from .models import Category
 from .models import Like
+from .models import Report
 
 
 class AudioSerializer(serializers.ModelSerializer):
@@ -32,3 +33,9 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         fields = ('id', 'audio', 'actor')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ('id', 'actor', 'audio')
