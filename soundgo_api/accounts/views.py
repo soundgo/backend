@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import ActorSerializer
-
+from rest_framework_jwt.views import obtain_jwt_token
 
 
 
@@ -32,7 +32,7 @@ def login(request, role):
     response_not_valid = {"error": "TOKEN_NOT_VALID", "details": "The token is not valid"}
     actor_not_allowed = {"error": "ACTOR_NOT_ALLOWED", "details": "The actor can not do this action"}
 
-
+    print(request.META.get('HTTP_AUTHORIZATION'))
     if request.META.get('HTTP_AUTHORIZATION') == None or request.META.get('HTTP_AUTHORIZATION').strip() == "":
         return JSONResponse(response_not_token, status=400)
 
@@ -50,13 +50,17 @@ def login(request, role):
 
             elif role == "advertiser":
                 actor= Actor.objects.filter(user_account= request.user).all()[0]
-                if actor.credit_card == None:
+                if actor.credit_card == None or request.user.admin: #Segunda condicion nueva
                     return JSONResponse(actor_not_allowed, status=400)
 
             elif role == "user":
                 #Verificar q no tenga tarjeta y no sea admin
                 actor = Actor.objects.filter(user_account=request.user).all()[0]
                 if actor.credit_card != None or request.user.admin:
+                    return JSONResponse(actor_not_allowed, status=400)
+
+            elif role == "advertiserUser":
+                if request.user.admin:
                     return JSONResponse(actor_not_allowed, status=400)
 
             elif role == "all":
@@ -69,10 +73,57 @@ def login(request, role):
             request.user = AnonymousUser()
             return JSONResponse(response_not_valid, status=400)
 
+    return True
+
 
 
 def logout(request):
     request.user = AnonymousUser()
+
+
+
+@csrf_exempt
+def get_token(request):
+    response_not_valid = {"error": "AUTHENTICATION_NOT_VALID", "details": "The authentication is not valid"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+
+    if request.method == 'POST':
+
+        try:
+
+
+            data={}
+
+            jwt= obtain_jwt_token(request)
+            if jwt.status_code != 200:
+                return JSONResponse(jwt.data, status=400)
+
+            valid_data = VerifyJSONWebTokenSerializer().validate({'token':jwt.data['token']})
+            actor = Actor.objects.filter(user_account__nickname=valid_data['user']).all()[0]
+
+            print(actor)
+            data["token"]=  jwt.data['token']
+
+
+            if actor.user_account.is_admin:
+                data["role"] = "admin"
+            elif actor.credit_card == None:
+                data["role"] = "user"
+            else:
+                data["role"] = "advertiser"
+
+            data["actorId"] =  actor.id
+
+            return JSONResponse(data, status=200)
+
+
+
+        except Exception  or KeyError or ValueError as e:
+            return JSONResponse(response_not_valid, status=400)
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)
 
 
 @csrf_exempt
