@@ -68,6 +68,7 @@ class Actor(models.Model):
     def __str__(self):
         return "%s" % self.email
 
+
 class CreditCard(models.Model):
 
     holderName = models.CharField(blank=False, max_length=255)

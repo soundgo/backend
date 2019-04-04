@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 
 from .forms import UserAccountAdminCreationForm, UserAccountAdminChangeForm
 
-from .models import Actor
+from .models import Actor, CreditCard
 
 UserAccount = get_user_model()
 
@@ -26,7 +26,7 @@ class UserAccountAdmin(BaseUserAccountAdmin):
     form = UserAccountAdminChangeForm
     add_form = UserAccountAdminCreationForm
 
-    inlines = (ActorInline,)
+    inlines = (ActorInline, )
 
     list_display = ('nickname', 'active', 'admin')
 
@@ -59,4 +59,5 @@ class UserAccountAdmin(BaseUserAccountAdmin):
 
 
 admin.site.register(UserAccount, UserAccountAdmin)
+admin.site.register(CreditCard)
 admin.site.unregister(Group)
