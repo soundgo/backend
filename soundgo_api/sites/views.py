@@ -6,7 +6,6 @@ from .models import Site
 from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
-from managers.firebase_manager import add_site, remove_site
 from copy import deepcopy
 
 
@@ -42,9 +41,7 @@ def site_create(request):
             serializer = SiteSerializer(data=data)
             if serializer.is_valid():
                 # Save in db
-                site = serializer.save()
-                # Save in Firebase Cloud Firestore
-                add_site(site)
+                serializer.save()
                 return JSONResponse(serializer.data, status=201)
             return JSONResponse(response_data_save, status=400)
 
@@ -113,11 +110,8 @@ def site_update_delete_get(request, site_id):
 
         try:
 
-            # Remove site from Firebase Cloud Firestore
-            site_copy = deepcopy(site)
             # Remove site from db
             site.delete()
-            remove_site(site_copy)
 
         except Exception or KeyError or ValueError:
             return JSONResponse(response_data_delete, status=400)
