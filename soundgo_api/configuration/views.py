@@ -38,8 +38,8 @@ def configuration_get(request):
 
             serializer = ConfigurationSerializer(configuration)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_configuration_get, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
         return JSONResponse(serializer.data)
 

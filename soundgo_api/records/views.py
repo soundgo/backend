@@ -68,7 +68,7 @@ def advertisement_create(request):
             return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
-            return JSONResponse(response_data_save, status=400)
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method,
@@ -101,8 +101,8 @@ def advertisement_update_get(request, advertisement_id):
 
             serializer = AdvertisementSerializer(advertisement)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_get, status= 400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status= 400)
 
         data_aux = serializer.data
         data_aux.pop('actor')
@@ -138,7 +138,7 @@ def advertisement_update_get(request, advertisement_id):
             return JSONResponse(response_data_put, status=400)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(response_data_put, status=400)
+            return JSONResponse(str(e), status=400)
     else:
         return JSONResponse(response_data_not_method, status=400)
 
@@ -199,7 +199,7 @@ def audio_create(request):
             return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
-            return JSONResponse(response_data_save, status=400)
+            return JSONResponse(str(e), status=400)
     else:
         return JSONResponse(response_data_not_method,
                             status=400)
@@ -243,8 +243,8 @@ def audio_delete_get(request, audio_id):
                 if not report:
                     data_aux["reported"] = True
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_audio_get, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
         return JSONResponse(data_aux)
 
@@ -255,8 +255,8 @@ def audio_delete_get(request, audio_id):
             # Todo Solo lo puede borrar el creador del audio o un administrador
             audio.delete()
 
-        except Exception or KeyError or ValueError:
-            return JSONResponse(response_audio_delete, status=400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(str(e), status=400)
 
         return HttpResponse(status=204)
 
@@ -323,7 +323,7 @@ def audio_site_create(request, site_id):
             return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
-            return JSONResponse(response_data_save, status=400)
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -363,8 +363,8 @@ def audio_site_category_get(request, site_id):
 
             serializer = AudioSerializer(audios_list, many=True)
 
-        except Exception or KeyError or ValueError:
-            return JSONResponse(response_audio_get, status= 400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(str(e), status= 400)
 
         return JSONResponse(serializer.data)
 
@@ -396,8 +396,8 @@ def audio_listen(request, audio_id):
 
             return HttpResponse(status=204)
 
-        except Exception or KeyError or ValueError:
-            return JSONResponse(response_data_save, status=400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method,
@@ -441,8 +441,8 @@ def advertisement_listen(request, advertisement_id):
 
             return HttpResponse(status=204)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_save, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -524,8 +524,8 @@ def like_create(request, audio_id):
                 return JSONResponse(serializer.data, status=201)
             return JSONResponse(response_data_save, status=400)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_save, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -562,8 +562,8 @@ def report_create(request, audio_id):
                 return JSONResponse(serializer.data, status=201)
             return JSONResponse(response_data_save, status=400)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_save, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
