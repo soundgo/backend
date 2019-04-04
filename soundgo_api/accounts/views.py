@@ -117,10 +117,8 @@ def get_token(request):
 
             return JSONResponse(data, status=200)
 
-
-
-        except Exception  or KeyError or ValueError as e:
-            return JSONResponse(response_not_valid, status=400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -149,9 +147,8 @@ def actor_get(request, nickname):
 
             serializer = ActorSerializer(actor)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_get, status= 400)
-
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status= 400)
 
         return JSONResponse(serializer.data)
     else:

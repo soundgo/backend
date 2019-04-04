@@ -45,8 +45,8 @@ def site_create(request):
                 return JSONResponse(serializer.data, status=201)
             return JSONResponse(response_data_save, status=400)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_save, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -79,8 +79,8 @@ def site_update_delete_get(request, site_id):
 
             serializer = SiteSerializer(site)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_get, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
         data_aux = serializer.data
         data_aux.pop("actor")
@@ -101,8 +101,8 @@ def site_update_delete_get(request, site_id):
                 serializer.save()
                 return JSONResponse(serializer.data)
 
-        except Exception or ValueError or KeyError:
-            return JSONResponse(response_data_put, status=400)
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
 
         return JSONResponse(response_data_put, status=400)
 
@@ -113,8 +113,8 @@ def site_update_delete_get(request, site_id):
             # Remove site from db
             site.delete()
 
-        except Exception or KeyError or ValueError:
-            return JSONResponse(response_data_delete, status=400)
+        except Exception or KeyError or ValueError as e:
+            return JSONResponse(str(e), status=400)
 
         return HttpResponse(status=204)
 
