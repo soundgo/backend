@@ -10,3 +10,4 @@ gunicorn==19.9.0
 django-heroku==0.3.1
 django-cors-headers==2.5.2
 firebase-admin==2.16.0
+APScheduler==3.6.0
