@@ -3,3 +3,6 @@ release: sh -c 'cd soundgo_api && python3 manage.py makemigrations && python3 ma
 
 % Deploy SoundGo.
 web: sh -c 'cd soundgo_api && gunicorn soundgo_api.wsgi --log-file -'
+
+% Scheduler.
+clock: python3 soundgo_api/soundgo_api/clock.py
