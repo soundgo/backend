@@ -4,12 +4,14 @@ from django.shortcuts import render
 from rest_framework_jwt.serializers import VerifyJSONWebTokenSerializer
 import rest_framework
 from django.contrib.auth.models import AnonymousUser
-from .models import UserAccount, Actor
+from .models import UserAccount, Actor, CreditCard
 from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
 from django.views.decorators.csrf import csrf_exempt
-from .serializers import ActorSerializer
+from .serializers import ActorSerializer, CreditCardSerializer
 from rest_framework_jwt.views import obtain_jwt_token
+from django.db import transaction
+from rest_framework.parsers import JSONParser
 
 
 
@@ -153,3 +155,119 @@ def actor_get(request, nickname):
         return JSONResponse(serializer.data)
     else:
         return JSONResponse(response_data_not_method, status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def creditcard_create(request):
+
+    response_data_save = {"error": "SAVE_CREDITCARD", "details": "There was an error to save the credit card"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == 'POST':
+
+        login_result = login(request, 'user')
+        if login_result is not True:
+            return login_result
+
+        try:
+
+            data = JSONParser().parse(request)
+
+            data = pruned_serializer_credit_card_create(data)
+            serializer = CreditCardSerializer(data=data)
+            if serializer.is_valid():
+                # Save in db
+                credit_card = serializer.save()
+                actor = Actor.objects.get(user_account=request.user.id)
+                actor.credit_card = credit_card
+                actor.save()
+                return JSONResponse(serializer.data, status=201)
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def creditcard_update_get(request, creditcard_id):
+
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_creditcard_not_found = {"error": "CREDITCARD_NOT_FOUND", "details": "The credit card does not exit"}
+    response_creditcard_not_see = {"error": "CREDITCARD_NOT_SEE", "details": "You cannot se this creditcard"}
+    response_creditcard_put = {"error": "PUT_CREDITCARD", "details": "There was an error to update the creditcard"}
+    response_creditcard_not_put = {"error": "NOT_PUT_CREDITCARD", "details": "You can not update the credit card"}
+
+    try:
+        credit_card = CreditCard.objects.get(pk=creditcard_id)
+    except CreditCard.DoesNotExist:
+        return JSONResponse(response_creditcard_not_found, status=404)
+    actor = Actor.objects.get(credit_card=credit_card.id)
+
+    if request.method == 'GET':
+
+        login_result = login(request, 'advertiser')
+        login_result2 = login(request, 'admin')
+        if login_result is not True and login_result2 is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if actor_aux.credit_card.id != credit_card.id:
+                return JSONResponse(response_creditcard_not_see, status=400)
+
+        try:
+
+            serializer = CreditCardSerializer(credit_card)
+            data_aux = serializer.data
+            data_aux["name"] = actor.user_account.nickname
+            data_aux["photo"] = actor.photo
+
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
+
+        return JSONResponse(data_aux, status=200)
+
+    elif request.method == 'PUT':
+
+        login_result = login(request, 'advertiser')
+        if login_result is not True:
+            return login_result
+
+        if request.user.id != actor.user_account.id:
+            return JSONResponse(response_creditcard_not_put, status=200)
+        try:
+            data = JSONParser().parse(request)
+
+            data = pruned_serializer_credit_card_update(credit_card, data)
+            serializer = CreditCardSerializer(credit_card, data=data)
+            if serializer.is_valid():
+                serializer.save()
+
+                return JSONResponse(serializer.data, status=200)
+            return JSONResponse(response_creditcard_put, status=400)
+
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse(str(e), status=400)
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)
+
+
+def pruned_serializer_credit_card_create(data):
+    data['isDelete'] = False
+    return data
+
+
+def pruned_serializer_credit_card_update(creditcard, data):
+    data["holderName"] = creditcard.holderName
+    data["brandName"] = creditcard.brandName
+    data["number"] = creditcard.number
+    data["expirationMonth"] = creditcard.expirationMonth
+    data["expirationYear"] = creditcard.expirationYear
+    data["cvvCode"] = creditcard.cvvCode
+    return data
