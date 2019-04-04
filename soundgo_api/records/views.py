@@ -235,8 +235,7 @@ def audio_delete_get(request, audio_id):
 
             if login_result is True and len(Like.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
                 data_aux["liked"] = True
-            else:
-                data_aux["liked"] = False
+
             data_aux["reported"] = False
 
             if login_result is True:
@@ -498,6 +497,7 @@ def like_create(request, audio_id):
 
     response_data_save = {"error": "SAVE_LIKE", "details": "There was an error to save the like"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_liked = {"error": "ALREADY_LIKED", "details": "This user has already liked the audio"}
 
     if request.method == 'POST':
 
@@ -517,6 +517,10 @@ def like_create(request, audio_id):
             audio = Audio.objects.get(id=audio_id)
             audio.timestampFinish = audio.timestampFinish + timedelta(
                 seconds=Configuration.objects.all()[0].time_extend_audio)
+
+            if len(Like.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
+                return JSONResponse(response_liked, status=400)
+
             if serializer.is_valid():
                 # Save in db
                 serializer.save()
@@ -538,6 +542,7 @@ def report_create(request, audio_id):
 
     response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the report"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_reported = {"error": "ALREADY_REPORTED", "details": "This user has already reported the audio"}
 
     if request.method == 'POST':
 
@@ -553,6 +558,10 @@ def report_create(request, audio_id):
             # Fin user de prueba
             data['audio'] = audio_id
             serializer = ReportSerializer(data=data)
+
+            if len(Report.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
+                return JSONResponse(response_reported, status=400)
+
             if serializer.is_valid():
                 # Save in db
                 report = serializer.save()
