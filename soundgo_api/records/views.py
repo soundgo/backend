@@ -108,7 +108,7 @@ def advertisement_update_get(request, advertisement_id):
         data_aux.pop('actor')
         data_aux["name"] = advertisement.actor.user_account.nickname
         data_aux["photo"] = advertisement.actor.photo
-        return JSONResponse(data_aux)
+        return JSONResponse(data_aux, status=200)
 
     elif request.method == 'PUT':
 
@@ -223,7 +223,7 @@ def audio_delete_get(request, audio_id):
 
         try:
 
-            login(request, 'all')
+            login_result = login(request, 'advertiserUser')
             serializer = AudioSerializer(audio)
             data_aux = serializer.data
             data_aux["category"] = audio.category.name
@@ -231,22 +231,23 @@ def audio_delete_get(request, audio_id):
             data_aux["name"] = audio.actor.user_account.nickname
             data_aux["photo"] = audio.actor.photo
             data_aux["numberLikes"] = len(Like.objects.filter(audio=audio_id))
-            if len(Like.objects.filter(audio=audio_id).filter(actor=request.user.id)) == 0:
-                data_aux["liked"] = False
-            else:
+            data_aux["liked"] = False
+
+            if login_result is True and len(Like.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
                 data_aux["liked"] = True
+            else:
+                data_aux["liked"] = False
             data_aux["reported"] = False
-            login_result = login(request, 'advertiserUser')
 
             if login_result is True:
-                report = Report.objects.filter(audio=audio.id).filter(actor=request.user.id)
-                if not report:
+                report = Report.objects.filter(audio=audio.id).filter(actor__user_account=request.user.id)
+                if report:
                     data_aux["reported"] = True
 
         except Exception or ValueError or KeyError as e:
             return JSONResponse(str(e), status=400)
 
-        return JSONResponse(data_aux)
+        return JSONResponse(data_aux, status=200)
 
     elif request.method == 'DELETE':
 
@@ -366,7 +367,7 @@ def audio_site_category_get(request, site_id):
         except Exception or KeyError or ValueError as e:
             return JSONResponse(str(e), status= 400)
 
-        return JSONResponse(serializer.data)
+        return JSONResponse(serializer.data, status=200)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -508,8 +509,8 @@ def like_create(request, audio_id):
         try:
 
             data = {}
-
-            data['actor'] = request.user.id
+            actor = Actor.objects.get(user_account=request.user.id)
+            data['actor'] = actor.id
             data['audio'] = audio_id
 
             serializer = LikeSerializer(data=data)
@@ -547,7 +548,8 @@ def report_create(request, audio_id):
         try:
             configuration = Configuration.objects.all()[0]
             data = {}
-            data['actor'] = request.user.id
+            actor = Actor.objects.get(user_account=request.user.id)
+            data['actor'] = actor.id
             # Fin user de prueba
             data['audio'] = audio_id
             serializer = ReportSerializer(data=data)

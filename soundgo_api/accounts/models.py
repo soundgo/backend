@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from .managers import UserAccountManager
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class UserAccount(AbstractBaseUser):
@@ -58,7 +59,7 @@ class Actor(models.Model):
     photo = models.CharField('Photo', max_length=800, blank=True)
     email = models.EmailField('Email', max_length=255, blank=False)
     minutes = models.PositiveIntegerField('Minutes (s)', default=300)
-    credit_card = models.ForeignKey("CreditCard", on_delete=models.SET_NULL, null = True, blank= True)
+    credit_card = models.ForeignKey("CreditCard", on_delete=models.SET_NULL, null = True, blank= True, related_name='actor')
 
     class Meta:
         db_table = 'actor'
@@ -74,8 +75,8 @@ class CreditCard(models.Model):
     holderName = models.CharField(blank=False, max_length=255)
     brandName = models.CharField(blank=False, max_length=255)
     number = models.CharField(blank=False, max_length=255)
-    expirationMonth = models.IntegerField()
-    expirationYear = models.IntegerField()
+    expirationMonth = models.IntegerField(validators=[MaxValueValidator(12), MinValueValidator(1)])
+    expirationYear = models.PositiveIntegerField()
     cvvCode = models.IntegerField()
     isDelete = models.BooleanField(default=False)
 
