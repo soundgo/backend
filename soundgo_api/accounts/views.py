@@ -39,7 +39,11 @@ def login(request, role):
         return JSONResponse(response_not_token, status=400)
 
     else:
-        data = {'token': request.META.get('HTTP_AUTHORIZATION').split()[1]}
+
+        try:
+            data = {'token': request.META.get('HTTP_AUTHORIZATION').split()[1]}
+        except Exception as e:
+            return JSONResponse({"error": "TOKEN_NOT_FOUND", "details": str(e)}, status=400)
 
         try:
             valid_data = VerifyJSONWebTokenSerializer().validate(data)
