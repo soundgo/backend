@@ -532,6 +532,7 @@ def like_create(request, audio_id):
         return JSONResponse(response_data_not_method, status=400)
 
 
+
 @csrf_exempt
 @transaction.atomic
 def report_create(request, audio_id):
@@ -569,3 +570,13 @@ def report_create(request, audio_id):
 
     else:
         return JSONResponse(response_data_not_method, status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def prueba(request):
+
+    login_result = login(request, 'advertiserUser')
+    if login_result is not True:
+        return login_result
+    return JSONResponse("", status=201)
