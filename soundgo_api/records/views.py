@@ -579,4 +579,5 @@ def prueba(request):
     login_result = login(request, 'advertiserUser')
     if login_result is not True:
         return login_result
-    return JSONResponse("", status=201)
+
+    return JSONResponse(str(request.user), status=201)
