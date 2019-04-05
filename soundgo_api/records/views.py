@@ -14,6 +14,8 @@ from accounts.views import login
 from managers.firebase_manager import add_audio, add_advertisement, remove_advertisement
 from configuration.models import Configuration
 from datetime import timedelta
+from tags.models import Tag
+from managers.firebase_manager import update_audio
 
 # TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
@@ -236,13 +238,16 @@ def audio_create(request):
 
 @csrf_exempt
 @transaction.atomic
-def audio_delete_get(request, audio_id):
+def audio_delete_get_update(request, audio_id):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
     response_audio_get = {"error": "GET_AUDIO", "details": "There was an error to get the audio"}
     response_audio_delete = {"error": "DELETE_AUDIO", "details": "There was an error to delete the audio"}
     response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
+    category_not_found = {"error": "CATEGORY_NOT_FOUND", "details": "The category doesn't exists"}
+    category_bad_request = {"error": "GET_CATEGORY", "details": "You must specify the category"}
+    tags_bad_request = {"error": "GET_TAGS", "details": "You must specify the tags"}
 
     try:
         audio = Audio.objects.get(pk=audio_id)
@@ -299,6 +304,85 @@ def audio_delete_get(request, audio_id):
             return JSONResponse(str(e), status=400)
 
         return HttpResponse(status=204)
+
+    elif request.method == 'PUT':
+
+        login_result = login(request, 'advertiserUser')
+        if login_result is not True:
+            return login_result
+
+        # Is the user or advertiser of the audio
+        if not audio.actor.user_account.id == request.user.id:
+            return JSONResponse({"error": "ACTOR_NOT_ALLOW",
+                                 "details": "This actor can not edit the audio"}, status=404)
+
+        try:
+
+            with transaction.atomic():
+                data = JSONParser().parse(request)
+
+                # Check category
+                if data.get('category') != None:
+                    category = Category.objects.filter(name=data.get('category')).all()
+
+                    if len(category) == 0:
+                        return JSONResponse(category_not_found, status=404)
+                    else:
+                        audio.category = category[0]
+                else:
+                    return JSONResponse(category_bad_request, status=400)
+
+                # Check tags
+                if data.get('tags') == None:
+                    return JSONResponse(tags_bad_request, status=404)
+
+                # Update tags
+                audioTags = [tag.name for tag in audio.tags.all()]
+                tagsNameCheck = set(data.get('tags')) ^ set(audioTags)
+
+                for tagName in tagsNameCheck:
+                    tag = Tag.objects.filter(name=tagName).all()
+                    print(audio.tags.all())
+                    if len(tag) == 0:
+                        tag = Tag.objects.create(name=tagName)
+                        audio.tags.add(tag)
+                    elif tag[0].name in audioTags:
+                        audio.tags.remove(tag[0])
+
+                        # If the tag never used delete of the system
+                        audios = Audio.objects.all().filter(tags__name=tag[0].name).all()
+
+                        if len(audios) == 0:
+                            tag[0].delete()
+
+                    else:
+                        audio.tags.add(tag[0])
+
+                audio.save()
+
+                serializer = AudioSerializer(audio)
+
+                # Return tags name
+                tagsNames = []
+                for tagId in serializer.data['tags']:
+                    tag = Tag.objects.filter(pk=tagId).all()[0]
+                    tagsNames.append(tag.name)
+
+                data = serializer.data
+                data.pop("tags")
+                data['tags'] = tagsNames
+
+                update_audio(audio, tagsNames)
+
+                return JSONResponse(data)
+
+
+        except Exception or ValueError or KeyError as e:
+            return JSONResponse({"error": "UPDATE_AUDIO", "details": str(e)}, status=400)
+
+
+
+
 
     else:
         return JSONResponse(response_data_not_method,
@@ -545,6 +629,7 @@ def pruned_serializer_audio_create_site(data, site_id):
 
 
 @csrf_exempt
+@transaction.atomic
 def like_create(request, audio_id):
 
     response_data_save = {"error": "SAVE_LIKE", "details": "There was an error to save the like"}
@@ -632,12 +717,3 @@ def report_create(request, audio_id):
         return JSONResponse(response_data_not_method, status=400)
 
 
-@csrf_exempt
-@transaction.atomic
-def prueba(request):
-
-    login_result = login(request, 'advertiserUser')
-    if login_result is not True:
-        return login_result
-
-    return JSONResponse(str(request.user), status=201)

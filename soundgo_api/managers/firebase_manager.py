@@ -68,12 +68,26 @@ def add_audio(audio):
         u'properties': {
             u'id': audio_id,
             u'actorId': audio_actor,
-            u'type': audio_category
+            u'type': audio_category,
+            u'tags': []
         },
         u'type': u'Feature'
     }
 
     db.collection(u'audios').add(data)
+
+
+def update_audio(audio,tags):
+
+    audio_id = audio.id
+
+    collection = db.collection(u'audios')
+
+    documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
+
+    for doc in documents:
+        collection.document(doc.id).update({u'properties.tags': tags})
+
 
 
 def add_advertisement(advertisement):
