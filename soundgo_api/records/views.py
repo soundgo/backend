@@ -34,6 +34,8 @@ class JSONResponse(HttpResponse):
 def advertisement_create(request):
     response_data_save = {"error": "SAVE_ADVERTISEMENT", "details": "There was an error to save the advertisement"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
+    response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD", "details": "Logged user does not have a credit card"}
 
     if request.method == 'POST':
 
@@ -41,10 +43,20 @@ def advertisement_create(request):
 
             data = JSONParser().parse(request)
 
-            # TODO user de prueba. Comprobar que tenga tarjeta de credito, lo crea el usuario autenticado si es anunciante
-            actor = Actor.objects.all()[0]
+            # Comprobar que es anunciante
+            login_result = login(request, 'advertiser')
+
+            if login_result is not True:
+                return login_result
+
+            # Comprobar que que tiene tarjeta de credito
+            if login_result is True:
+                actor_aux = Actor.objects.get(user_account=request.user.id)
+                if actor_aux.credit_card is None:
+                    return JSONResponse(response_actor_not_credit_card, status=400)
+
+            actor = Actor.objects.get(user_account=request.user.id)
             data['actor'] = actor.id
-            # Fin user de prueba
 
             # coger el base 64 y guardar , meter en data['path'] la url que retorne
             try:
@@ -89,6 +101,7 @@ def advertisement_update_get(request, advertisement_id):
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND",
                                         "details": "The advertisement does not exit"}
     response_data_deleted = {"error": "DELETE_ADVERTISEMENT", "details": "The advertisement is deleted"}
+    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
 
     try:
         advertisement = Advertisement.objects.get(pk=advertisement_id)
@@ -114,7 +127,16 @@ def advertisement_update_get(request, advertisement_id):
 
         try:
 
-            # Todo poner que el que lo modifica es el mismo que lo crea
+            login_result = login(request, 'advertiser')
+            if login_result is not True:
+                return login_result
+
+            # Comprobar que el creador del audio es el usuario autenticado
+            if login_result is True:
+                actor_aux = Actor.objects.get(user_account=request.user.id)
+                if actor_aux.id != advertisement.actor.id:
+                    return JSONResponse(response_audio_not_belong, status=400)
+
             if advertisement.isDelete is True:
                 return JSONResponse(response_data_deleted, status=400)
 
@@ -151,6 +173,8 @@ def audio_create(request):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
     response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
+    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
+
 
     if request.method == 'POST':
 
@@ -159,8 +183,13 @@ def audio_create(request):
             print(request)
             data = JSONParser().parse(request)
 
-            # TODO user de prueba, poner que el que lo crea es el usuario autenticado
-            actor = Actor.objects.all()[0]
+            login_result = login(request, 'userAdvertiser')
+            if login_result is not True:
+                return login_result
+
+            # El creador del audio es el usuario autenticado
+
+            actor = Actor.objects.get(user_account=request.user.id)
             data['actor'] = actor.id
             # Fin user de prueba
 
@@ -213,6 +242,7 @@ def audio_delete_get(request, audio_id):
     response_audio_not_found = {"error": "AUDIO_NOT_FOUND", "details": "The audio does not exit"}
     response_audio_get = {"error": "GET_AUDIO", "details": "There was an error to get the audio"}
     response_audio_delete = {"error": "DELETE_AUDIO", "details": "There was an error to delete the audio"}
+    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
 
     try:
         audio = Audio.objects.get(pk=audio_id)
@@ -252,7 +282,17 @@ def audio_delete_get(request, audio_id):
 
         try:
 
-            # Todo Solo lo puede borrar el creador del audio o un administrador
+            # Comprobar que solo lo puede borrar el creador del audio o un administrador
+            login_result = login(request, 'userAdvertiser')
+            login_result2 = login(request, 'admin')
+            if login_result is not True and login_result2 is not True:
+                return login_result
+
+            if login_result is True:
+                actor_aux = Actor.objects.get(user_account=request.user.id)
+                if actor_aux.id != audio.actor.id:
+                    return JSONResponse(response_audio_not_belong, status=400)
+
             audio.delete()
 
         except Exception or KeyError or ValueError as e:
@@ -274,6 +314,7 @@ def audio_site_create(request, site_id):
     response_site_not_found = {"error": "SITE_NOT_FOUND", "details": "The site does not exit"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
     response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
+    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
 
     try:
         Site.objects.get(pk=site_id)
@@ -282,12 +323,16 @@ def audio_site_create(request, site_id):
 
     if request.method == 'POST':
 
+        login_result = login(request, 'userAdvertiser')
+        if login_result is not True:
+            return login_result
+
         try:
 
             data = JSONParser().parse(request)
 
-            # TODO user de prueba, el creador del audio es el usuario autenticado
-            actor = Actor.objects.all()[0]
+            # Comprobar que el creador del audio es el usuario autenticado
+            actor = Actor.objects.get(user_account=request.user.id)
             data['actor'] = actor.id
             # Fin user de prueba
             try:
@@ -423,9 +468,9 @@ def advertisement_listen(request, advertisement_id):
                 # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
                 # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
                 #  y si es la primera vez que lo escuchas se crea un reproduction
-                # TODO  (PROPUESTA) si el usuario es un administrador o es el mismo creador del audio debe poder escucharlo siempre y no se suma ni reproducciones ni minutos.
 
-            actor = Actor.objects.all()[0]
+
+              # logged actor
 
             ad.numberReproductions = ad.numberReproductions + 1
 
@@ -433,11 +478,18 @@ def advertisement_listen(request, advertisement_id):
 
             configuration = Configuration.objects.all()[0]
 
-            actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+             # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
+            login_result = login(request, 'user')
+            login_result2 = login(request, 'advertiser')
+
+            if login_result is True or login_result2 is True:
+                actor = Actor.objects.get(user_account=request.user.id)
+                if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
+                    actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+                    actor.save()
 
             # Save the audio
             ad.save()
-            actor.save()
 
             return HttpResponse(status=204)
 
@@ -501,9 +553,9 @@ def like_create(request, audio_id):
 
     if request.method == 'POST':
 
-        loginResult = login(request, 'advertiserUser')
-        if loginResult != True:
-            return loginResult
+        login_result = login(request, 'advertiserUser')
+        if login_result is not True:
+            return login_result
 
         try:
 
