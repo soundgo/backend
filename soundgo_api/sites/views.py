@@ -86,7 +86,7 @@ def site_update_delete_get(request, site_id):
         data_aux.pop("actor")
         data_aux["name_actor"] = site.actor.user_account.nickname
         data_aux["photo"] = site.actor.photo
-        return JSONResponse(data_aux)
+        return JSONResponse(data_aux, status=200)
 
     # Todo solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
