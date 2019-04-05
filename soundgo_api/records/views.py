@@ -35,7 +35,7 @@ def advertisement_create(request):
     response_data_save = {"error": "SAVE_ADVERTISEMENT", "details": "There was an error to save the advertisement"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
-    response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD", "details": "Logges user does not have a credit card"}
+    response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD", "details": "Logged user does not have a credit card"}
 
     if request.method == 'POST':
 
