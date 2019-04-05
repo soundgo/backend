@@ -534,7 +534,6 @@ def like_create(request, audio_id):
 
 
 @csrf_exempt
-@transaction.atomic
 def report_create(request, audio_id):
 
     response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the report"}
