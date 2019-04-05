@@ -494,7 +494,6 @@ def pruned_serializer_audio_create_site(data, site_id):
 
 
 @csrf_exempt
-@transaction.atomic
 def like_create(request, audio_id):
 
     response_data_save = {"error": "SAVE_LIKE", "details": "There was an error to save the like"}
