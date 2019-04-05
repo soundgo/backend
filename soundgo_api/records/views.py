@@ -44,16 +44,15 @@ def advertisement_create(request):
             data = JSONParser().parse(request)
 
             # Comprobar que es anunciante
-            login_result = login(request, 'userAdvertiser')
+            login_result = login(request, 'advertiser')
+
             if login_result is not True:
                 return login_result
 
-            # Comprobar que el creador del audio es el usuario autenticado y que tiene tarjeta de credito
+            # Comprobar que que tiene tarjeta de credito
             if login_result is True:
                 actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.id != request.actor.id:
-                    return JSONResponse(response_audio_not_belong, status=400)
-                elif actor_aux.credit_card is None:
+                if actor_aux.credit_card is None:
                     return JSONResponse(response_actor_not_credit_card, status=400)
 
             actor = Actor.objects.get(user_account=request.user.id)
@@ -128,7 +127,7 @@ def advertisement_update_get(request, advertisement_id):
 
         try:
 
-            login_result = login(request, 'userAdvertiser')
+            login_result = login(request, 'advertiser')
             if login_result is not True:
                 return login_result
 
@@ -176,6 +175,7 @@ def audio_create(request):
     response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
     response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
 
+
     if request.method == 'POST':
 
         try:
@@ -187,11 +187,7 @@ def audio_create(request):
             if login_result is not True:
                 return login_result
 
-            # Comprobar que el creador del audio es el usuario autenticado
-            if login_result is True:
-                actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.id != request.actor.id:
-                    return JSONResponse(response_audio_not_belong, status=400)
+            # El creador del audio es el usuario autenticado
 
             actor = Actor.objects.get(user_account=request.user.id)
             data['actor'] = actor.id
@@ -332,16 +328,11 @@ def audio_site_create(request, site_id):
         if login_result is not True:
             return login_result
 
-        # Comprobar que el creador del audio es el usuario autenticado
-        if login_result is True:
-            actor_aux = Actor.objects.get(user_account=request.user.id)
-            if actor_aux.id != request.actor.id:
-                return JSONResponse(response_audio_not_belong, status=400)
-
         try:
 
             data = JSONParser().parse(request)
 
+            # Comprobar que el creador del audio es el usuario autenticado
             actor = Actor.objects.get(user_account=request.user.id)
             data['actor'] = actor.id
             # Fin user de prueba

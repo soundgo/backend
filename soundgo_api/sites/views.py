@@ -107,18 +107,17 @@ def site_update_delete_get(request, site_id):
 
     # Comprobar que solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
-    login_result = login(request, 'advertiser')
-    login_result2 = login(request, 'admin')
-
-    if login_result is not True and login_result2 is not True:
-        return login_result
-
-    if login_result is True:
-        actor_aux = Actor.objects.get(user_account=request.user.id)
-        if site.actor.id != actor_aux.id:
-            return JSONResponse(response_site_not_belong, status=400)
-
     elif request.method == 'PUT':
+
+        login_result = login(request, 'advertiser')
+
+        if login_result is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if site.actor.id != actor_aux.id:
+                return JSONResponse(response_site_not_belong, status=400)
 
         try:
 
@@ -135,6 +134,17 @@ def site_update_delete_get(request, site_id):
         return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
+
+        login_result = login(request, 'advertiser')
+        login_result2 = login(request, 'admin')
+
+        if login_result is not True and login_result2 is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if site.actor.id != actor_aux.id:
+                return JSONResponse(response_site_not_belong, status=400)
 
         try:
 
