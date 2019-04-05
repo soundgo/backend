@@ -129,10 +129,6 @@ def get_token(request):
 @csrf_exempt
 def actor_get(request, nickname):
 
-
-    response_data_get = {"error": "GET_ACTOR", "details": "There was an error to "
-                                                                     "get the actor"}
-
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_actor_not_found = {"error": "ACTOR_NOT_FOUND",
                                         "details": "The actor does not exit"}
@@ -148,11 +144,13 @@ def actor_get(request, nickname):
         try:
 
             serializer = ActorSerializer(actor)
+            data_aux = serializer.data
+            data_aux["nickname"] = actor.user_account.nickname
 
         except Exception or ValueError or KeyError as e:
             return JSONResponse(str(e), status= 400)
 
-        return JSONResponse(serializer.data)
+        return JSONResponse(data_aux)
     else:
         return JSONResponse(response_data_not_method, status=400)
 
