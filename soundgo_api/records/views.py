@@ -189,7 +189,7 @@ def audio_create(request):
             print(request)
             data = JSONParser().parse(request)
 
-            login_result = login(request, 'userAdvertiser')
+            login_result = login(request, 'advertiserUser')
             if login_result is not True:
                 return login_result
 
@@ -294,7 +294,7 @@ def audio_delete_get_update(request, audio_id):
         try:
 
             # Comprobar que solo lo puede borrar el creador del audio o un administrador
-            login_result = login(request, 'userAdvertiser')
+            login_result = login(request, 'advertiserUser')
             login_result2 = login(request, 'admin')
             if login_result is not True and login_result2 is not True:
                 return login_result
@@ -413,7 +413,7 @@ def audio_site_create(request, site_id):
 
     if request.method == 'POST':
 
-        login_result = login(request, 'userAdvertiser')
+        login_result = login(request, 'advertiserUser')
         if login_result is not True:
             return login_result
 
