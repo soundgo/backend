@@ -37,7 +37,8 @@ def get_all_tags(request):
             serializer = TagSerializer(tags, many=True)
             data_aux = serializer.data
 
-        except Exception or ValueError or KeyError:
+        except Exception or ValueError or KeyError as e:
+            response_tags_get["details"] = str(e)
             return JSONResponse(response_tags_get, status=400)
 
         return JSONResponse(data_aux)
