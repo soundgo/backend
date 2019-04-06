@@ -26,7 +26,6 @@ def configuration_get(request):
 
     response_configuration_get = {"error": "GET_CONFIGURATION", "details": "There was an error to get the configuration"}
 
-
     try:
         configuration = Configuration.objects.all()[0]
     except Configuration.DoesNotExist:
@@ -39,11 +38,10 @@ def configuration_get(request):
             serializer = ConfigurationSerializer(configuration)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_configuration_get["details"] = str(e)
+            return JSONResponse(response_configuration_get, status=400)
 
         return JSONResponse(serializer.data)
 
-
     else:
-        return JSONResponse(response_data_not_method,
-                            status=400)
+        return JSONResponse(response_data_not_method, status=400)
