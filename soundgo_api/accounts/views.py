@@ -78,10 +78,8 @@ def login(request, role):
     return True
 
 
-
 def logout(request):
     request.user = AnonymousUser()
-
 
 
 @csrf_exempt
@@ -89,15 +87,13 @@ def get_token(request):
     response_not_valid = {"error": "AUTHENTICATION_NOT_VALID", "details": "The authentication is not valid"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
-
     if request.method == 'POST':
 
         try:
 
+            data = {}
 
-            data={}
-
-            jwt= obtain_jwt_token(request)
+            jwt = obtain_jwt_token(request)
             if jwt.status_code != 200:
                 return JSONResponse(jwt.data, status=400)
 
@@ -105,8 +101,7 @@ def get_token(request):
             actor = Actor.objects.filter(user_account__nickname=valid_data['user']).all()[0]
 
             print(actor)
-            data["token"]=  jwt.data['token']
-
+            data["token"] = jwt.data['token']
 
             if actor.user_account.is_admin:
                 data["role"] = "admin"
@@ -120,7 +115,8 @@ def get_token(request):
             return JSONResponse(data, status=200)
 
         except Exception or KeyError or ValueError as e:
-            return JSONResponse(str(e), status=400)
+            response_not_valid["details"] = str(e)
+            return JSONResponse(response_not_valid, status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -130,8 +126,8 @@ def get_token(request):
 def actor_get(request, nickname):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
-    response_actor_not_found = {"error": "ACTOR_NOT_FOUND",
-                                        "details": "The actor does not exit"}
+    response_actor_not_found = {"error": "ACTOR_NOT_FOUND", "details": "The actor does not exit"}
+    response_actor_get = {"error": "ACTOR_GET", "details": "The actor does not exit"}
 
     try:
 
@@ -148,7 +144,8 @@ def actor_get(request, nickname):
             data_aux["nickname"] = actor.user_account.nickname
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status= 400)
+            response_actor_get["details"] = str(e)
+            return JSONResponse(response_actor_get, status= 400)
 
         return JSONResponse(data_aux)
     else:
@@ -181,10 +178,12 @@ def creditcard_create(request):
                 actor.credit_card = credit_card
                 actor.save()
                 return JSONResponse(serializer.data, status=201)
+            response_data_save["details"] = serializer.errors
             return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_data_save["details"] = str(e)
+            return JSONResponse(response_data_save, status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -199,6 +198,7 @@ def creditcard_update_get(request, creditcard_id):
     response_creditcard_not_see = {"error": "CREDITCARD_NOT_SEE", "details": "You cannot se this creditcard"}
     response_creditcard_put = {"error": "PUT_CREDITCARD", "details": "There was an error to update the creditcard"}
     response_creditcard_not_put = {"error": "NOT_PUT_CREDITCARD", "details": "You can not update the credit card"}
+    response_creditcard_get = {"error": "NOT_GET_CREDITCARD", "details": "You can not update the credit card"}
 
     try:
         credit_card = CreditCard.objects.get(pk=creditcard_id)
@@ -226,7 +226,8 @@ def creditcard_update_get(request, creditcard_id):
             data_aux["photo"] = actor.photo
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_creditcard_get["details"] = str(e)
+            return JSONResponse(response_creditcard_get, status=400)
 
         return JSONResponse(data_aux, status=200)
 
@@ -243,14 +244,16 @@ def creditcard_update_get(request, creditcard_id):
 
             data = pruned_serializer_credit_card_update(credit_card, data)
             serializer = CreditCardSerializer(credit_card, data=data)
+
             if serializer.is_valid():
                 serializer.save()
-
                 return JSONResponse(serializer.data, status=200)
+            response_creditcard_put["details"] = serializer.errors
             return JSONResponse(response_creditcard_put, status=400)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_creditcard_put["details"] = str(e)
+            return JSONResponse(response_creditcard_put, status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
