@@ -86,7 +86,7 @@ def update_audio(audio,tags):
     documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
 
     for doc in documents:
-        collection.document(doc.id).update({u'properties.tags': tags})
+        collection.document(doc.id).update({u'properties.tags': tags, u'properties.type': audio.category.name})
 
 
 

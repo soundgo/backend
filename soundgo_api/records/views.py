@@ -283,6 +283,15 @@ def audio_delete_get_update(request, audio_id):
                 if report:
                     data_aux["reported"] = True
 
+            # Return tags name
+            tagsNames = []
+            for tagId in serializer.data['tags']:
+                tag = Tag.objects.filter(pk=tagId).all()[0]
+                tagsNames.append(tag.name)
+
+            data_aux.pop("tags")
+            data_aux['tags'] = tagsNames
+
         except Exception or ValueError or KeyError as e:
             response_audio_get["details"] = str(e)
             return JSONResponse(response_audio_get, status=400)
