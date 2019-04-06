@@ -58,10 +58,12 @@ def site_create(request):
                 # Save in db
                 serializer.save()
                 return JSONResponse(serializer.data, status=201)
+            response_data_save["details"] = serializer.errors
             return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_data_save["details"] = str(e)
+            return JSONResponse(response_data_save, status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -97,7 +99,8 @@ def site_update_delete_get(request, site_id):
             serializer = SiteSerializer(site)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_data_get["details"] = str(e)
+            return JSONResponse(response_data_get, status=400)
 
         data_aux = serializer.data
         data_aux.pop("actor")
@@ -127,11 +130,13 @@ def site_update_delete_get(request, site_id):
             if serializer.is_valid():
                 serializer.save()
                 return JSONResponse(serializer.data)
+            response_data_put["details"] = serializer.errors
+            return JSONResponse(response_data_put, status=400)
 
         except Exception or ValueError or KeyError as e:
-            return JSONResponse(str(e), status=400)
+            response_data_put["details"] = str(e)
+            return JSONResponse(response_data_put, status=400)
 
-        return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
 
@@ -152,7 +157,8 @@ def site_update_delete_get(request, site_id):
             site.delete()
 
         except Exception or KeyError or ValueError as e:
-            return JSONResponse(str(e), status=400)
+            response_data_delete["details"] = str(e)
+            return JSONResponse(response_data_delete, status=400)
 
         return HttpResponse(status=204)
 
