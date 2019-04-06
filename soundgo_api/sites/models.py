@@ -28,15 +28,15 @@ class Site(models.Model):
 # #############        SIGNALS        ############## #
 # ################################################## #
 
-@receiver(post_save, sender=Site)
-def auto_create_site_in_third_party_services(sender, instance, **kwargs):
+#@receiver(post_save, sender=Site)
+#def auto_create_site_in_third_party_services(sender, instance, **kwargs):
 
     """
     Signal to create the site in Firebase after PostgreSQL insertion.
     """
 
     # Create in Firebase
-    add_site(instance)
+ #   add_site(instance)
 
 
 @receiver(post_delete, sender=Site)

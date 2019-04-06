@@ -143,6 +143,17 @@ def add_site(site):
 
     db.collection(u'sites').add(data)
 
+def update_site(site):
+
+    site_id = site.id
+
+    collection = db.collection(u'sites')
+
+    documents = collection.where(u'properties.id', u'==', int(site_id)).get()
+
+    for doc in documents:
+        collection.document(doc.id).update({u'properties.name': site.name})
+
 
 def remove_audio(audio):
 

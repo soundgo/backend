@@ -8,6 +8,7 @@ from .serializers import SiteSerializer
 from django.db import transaction
 from accounts.views import login
 from copy import deepcopy
+from managers.firebase_manager import update_site, add_site
 
 
 class JSONResponse(HttpResponse):
@@ -56,7 +57,8 @@ def site_create(request):
             serializer = SiteSerializer(data=data)
             if serializer.is_valid():
                 # Save in db
-                serializer.save()
+                site= serializer.save()
+                add_site(site)
                 return JSONResponse(serializer.data, status=201)
             response_data_save["details"] = serializer.errors
             return JSONResponse(response_data_save, status=400)
@@ -128,7 +130,8 @@ def site_update_delete_get(request, site_id):
             data = pruned_serializer_site_update(site, data)
             serializer = SiteSerializer(site, data=data)
             if serializer.is_valid():
-                serializer.save()
+                site= serializer.save()
+                update_site(site)
                 return JSONResponse(serializer.data)
             response_data_put["details"] = serializer.errors
             return JSONResponse(response_data_put, status=400)
