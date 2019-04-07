@@ -115,8 +115,9 @@ def site_update_delete_get(request, site_id):
     elif request.method == 'PUT':
 
         login_result = login(request, 'advertiser')
+        login_result2 = login(request, 'admin')
 
-        if login_result is not True:
+        if login_result is not True and login_result2 is not True:
             return login_result
 
         if login_result is True:
