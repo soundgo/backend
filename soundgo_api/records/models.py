@@ -21,6 +21,7 @@ class Record(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
     numberReproductions = models.IntegerField(default=0)
+    duration = models.IntegerField(default=0)
     path = models.CharField(blank=False, max_length=800)
 
 

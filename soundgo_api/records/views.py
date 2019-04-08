@@ -68,8 +68,8 @@ def advertisement_create(request):
                 data = pruned_serializer_advertisement_create(data)
                 configuration = Configuration.objects.all()[0]
 
-                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data[
-                    "maxPriceToPay"] <= 0:
+                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and \
+                        data["maxPriceToPay"] <= 0:
                     remove_record(data['path'])
                     return JSONResponse(response_price_negative, status=400)
 
@@ -197,7 +197,7 @@ def audio_create(request):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_data_save = {"error": "SAVE_AUDIO", "details": "There was an error to save the audio"}
     response_data_not_minutes = {"error": "NOT_MINUTES", "details": "You do not have enough time to record this audio"}
-    response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
+    response_data_incorrect_base64 = {"error": "AUDIO_INCORRECT_BASE64", "details": "Invalid base64"}
 
     if request.method == 'POST':
 
@@ -220,6 +220,9 @@ def audio_create(request):
             try:
                 data['path'] = upload_record(data['base64'])
 
+                if data['path'] == '':
+                    return JSONResponse(response_data_incorrect_base64, status=400)
+
                 data = pruned_serializer_audio_create(data)
                 serializer = AudioSerializer(data=data)
             except Exception:
@@ -230,7 +233,7 @@ def audio_create(request):
                     return JSONResponse(response_data_save, status=400)
 
             # Ver si cumple los tiempos
-            duration = get_record_duration(data['path'])
+            duration = data['duration']
             if actor.minutes < duration:
                 remove_record(data['path'])
                 return JSONResponse(response_data_not_minutes, status=400)
@@ -409,13 +412,8 @@ def audio_delete_get_update(request, audio_id):
 
                 return JSONResponse(data)
 
-
         except Exception or ValueError or KeyError as e:
             return JSONResponse({"error": "UPDATE_AUDIO", "details": str(e)}, status=400)
-
-
-
-
 
     else:
         return JSONResponse(response_data_not_method, status=400)
@@ -585,12 +583,13 @@ def advertisement_listen(request, advertisement_id):
             return JSONResponse(response_advertisement_not_found, status=404)
 
         try:
-                # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya ese día el anuncio
-                # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda primero una petición al get y devuelvo si el autenticado lo puede escuchar?),
-                #  y si es la primera vez que lo escuchas se crea un reproduction
+            # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya
+            #  ese día el anuncio
+            # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda
+            #  primero una petición al get y devuelvo si el autenticado lo puede escuchar?), y si es la primera vez
+            #  que lo escuchas se crea un reproduction
 
-
-              # logged actor
+            # logged actor
 
             ad.numberReproductions = ad.numberReproductions + 1
 
@@ -598,7 +597,7 @@ def advertisement_listen(request, advertisement_id):
 
             configuration = Configuration.objects.all()[0]
 
-             # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
+            # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
             login_result = login(request, 'user')
             login_result2 = login(request, 'advertiser')
 
@@ -644,6 +643,7 @@ def pruned_serializer_advertisement_update(advertisement, data):
     data["longitude"] = advertisement.longitude
     data["numberReproductions"] = advertisement.numberReproductions
     data["path"] = advertisement.path
+    data["duration"] = advertisement.duration
     data["radius"] = advertisement.radius
     data["isActive"] = advertisement.isActive
     data["actor"] = advertisement.actor.id
@@ -654,6 +654,7 @@ def pruned_serializer_advertisement_create(data):
     data["numberReproductions"] = 0
     data["isActive"] = True
     data["isDelete"] = False
+    data["duration"] = get_record_duration(data["path"])
     return data
 
 
@@ -665,6 +666,7 @@ def pruned_serializer_audio_create(data):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data['category'] = get_object_or_404(Category, name=data['category']).pk
+    data["duration"] = get_record_duration(data["path"])
     return data
 
 
@@ -678,6 +680,7 @@ def pruned_serializer_audio_create_site(data, site_id):
     data['timestampCreation'] = time_now
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
+    data["duration"] = get_record_duration(data["path"])
     data['category'] = get_object_or_404(Category, name=data['category']).pk
     return data
 
@@ -726,7 +729,6 @@ def like_create(request, audio_id):
 
     else:
         return JSONResponse(response_data_not_method, status=400)
-
 
 
 @csrf_exempt
