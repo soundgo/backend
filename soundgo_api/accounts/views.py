@@ -157,6 +157,7 @@ def actor_get(request, nickname):
         return JSONResponse(response_data_not_method, status=400)
 
 @csrf_exempt
+@transaction.atomic
 def actor_create(request):
 
     response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the actor"}
