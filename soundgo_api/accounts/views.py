@@ -36,7 +36,7 @@ def login(request, role):
     response_not_valid = {"error": "TOKEN_NOT_VALID", "details": "The token is not valid"}
     actor_not_allowed = {"error": "ACTOR_NOT_ALLOWED", "details": "The actor can not do this action"}
 
-    print(request.META.get('HTTP_AUTHORIZATION'))
+
     if request.META.get('HTTP_AUTHORIZATION') == None or request.META.get('HTTP_AUTHORIZATION').strip() == "":
         return JSONResponse(response_not_token, status=400)
 
@@ -106,7 +106,7 @@ def get_token(request):
             valid_data = VerifyJSONWebTokenSerializer().validate({'token':jwt.data['token']})
             actor = Actor.objects.filter(user_account__nickname=valid_data['user']).all()[0]
 
-            print(actor)
+
             data["token"] = jwt.data['token']
 
             if actor.user_account.is_admin:
@@ -421,48 +421,7 @@ def pruned_serializer_credit_card_update(creditcard, data):
     data["cvvCode"] = creditcard.cvvCode
     return data
 
-def pruned_user_account_update(data, user_account):
-    result={}
 
-    if data.get('nickname') != None:
-        result['nickname'] = data['nickname']
-    else:
-        result['nickname'] = user_account.nickname
-
-    result['admin'] = user_account.admin
-    result['active'] = user_account.active
-    result['id'] = user_account.id
-
-    if data.get('password') != None:
-        result['password'] = data['password']
-    else:
-        result['password'] = user_account.password
-
-    return result
-
-def pruned_actor_update(data, actor):
-    result={}
-
-    if data.get('email') != None:
-        result['email'] = data['email']
-    else:
-        result['email'] = actor.email
-
-    result['id'] = actor.id
-
-    """if result['user_account'] != None:
-        result['user_account'] = pruned_user_account_update(data, actor.user_account)
-    else:"""
-    result['user_account'] = actor.user_account.id
-
-    result['minutes'] = actor.minutes
-
-    if actor.credit_card == None:
-        result['credit_card'] = None
-    else:
-        result['credit_card'] = actor.credit_card.id
-
-    return result
 
 
 
