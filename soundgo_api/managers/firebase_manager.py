@@ -48,6 +48,10 @@ firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
+# #################### #
+# ###### AUDIOS ###### #
+# #################### #
+
 
 def add_audio(audio):
 
@@ -56,6 +60,17 @@ def add_audio(audio):
     audio_latitude = audio.latitude
     audio_longitude = audio.longitude
     audio_actor = audio.actor.id
+    audio_is_inappropriate = audio.isInappropriate
+    audio_timestamp_creation = audio.timestampCreation
+    audio_timestamp_finish = audio.timestampFinish
+    audio_number_reproductions = audio.numberReproductions
+    audio_duration = audio.duration
+    audio_path = audio.path
+
+    if audio.site:
+        audio_site = audio.site.id
+    else:
+        audio_site = None
 
     data = {
         u'geometry': {
@@ -69,7 +84,14 @@ def add_audio(audio):
             u'id': audio_id,
             u'actorId': audio_actor,
             u'type': audio_category,
-            u'tags': []
+            u'tags': [],
+            u'site': audio_site,
+            u'isInappropriate': audio_is_inappropriate,
+            u'timestampCreation': audio_timestamp_creation,
+            u'timestampFinish': audio_timestamp_finish,
+            u'numberReproductions': audio_number_reproductions,
+            u'duration': audio_duration,
+            u'path': audio_path
         },
         u'type': u'Feature'
     }
@@ -77,7 +99,21 @@ def add_audio(audio):
     db.collection(u'audios').add(data)
 
 
-def update_audio(audio,tags):
+def update_audio(audio, tags):
+
+    audio_id = audio.id
+    audio_category = audio.category.name
+
+    collection = db.collection(u'audios')
+
+    documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
+
+    for doc in documents:
+        collection.document(doc.id).update({u'properties.tags': tags,
+                                            u'properties.type': audio_category})
+
+
+def remove_audio(audio):
 
     audio_id = audio.id
 
@@ -86,8 +122,11 @@ def update_audio(audio,tags):
     documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
 
     for doc in documents:
-        collection.document(doc.id).update({u'properties.tags': tags, u'properties.type': audio.category.name})
+        collection.document(doc.id).delete()
 
+# ############################ #
+# ###### ADVERTISEMENTS ###### #
+# ############################ #
 
 
 def add_advertisement(advertisement):
@@ -97,6 +136,12 @@ def add_advertisement(advertisement):
     advertisement_longitude = advertisement.longitude
     advertisement_radius = advertisement.radius
     advertisement_actor = advertisement.actor.id
+    advertisement_number_reproductions = advertisement.numberReproductions
+    advertisement_duration = advertisement.duration
+    advertisement_path = advertisement.path
+    advertisement_max_price_to_pay = advertisement.maxPriceToPay
+    advertisement_is_active = advertisement.isActive
+    advertisement_is_delete = advertisement.isDelete
 
     data = {
         u'geometry': {
@@ -109,7 +154,13 @@ def add_advertisement(advertisement):
         u'properties': {
             u'id': advertisement_id,
             u'actorId': advertisement_actor,
-            u'radius': advertisement_radius
+            u'radius': advertisement_radius,
+            u'numberReproductions': advertisement_number_reproductions,
+            u'duration': advertisement_duration,
+            u'path': advertisement_path,
+            u'maxPriceToPay': advertisement_max_price_to_pay,
+            u'isActive': advertisement_is_active,
+            u'isDelete': advertisement_is_delete
         },
         u'type': u'Feature'
     }
@@ -117,10 +168,44 @@ def add_advertisement(advertisement):
     db.collection(u'ads').add(data)
 
 
+def update_advertisement(advertisement):
+
+    advertisement_id = advertisement.id
+    advertisement_max_price_to_pay = advertisement.maxPriceToPay
+    advertisement_is_active = advertisement.isActive
+    advertisement_is_delete = advertisement.isDelete
+
+    collection = db.collection(u'ads')
+
+    documents = collection.where(u'properties.id', u'==', int(advertisement_id)).get()
+
+    for doc in documents:
+        collection.document(doc.id).update({u'properties.maxPriceToPay': advertisement_max_price_to_pay,
+                                            u'properties.isActive': advertisement_is_active,
+                                            u'properties.isDelete': advertisement_is_delete})
+
+
+def remove_advertisement(advertisement):
+
+    advertisement_id = advertisement.id
+
+    collection = db.collection(u'ads')
+
+    documents = collection.where(u'properties.id', u'==', int(advertisement_id)).get()
+
+    for doc in documents:
+        collection.document(doc.id).delete()
+
+# ################### #
+# ###### SITES ###### #
+# ################### #
+
+
 def add_site(site):
 
     site_id = site.id
     site_name = site.name
+    site_description = site.description
     site_latitude = site.latitude
     site_longitude = site.longitude
     site_actor = site.actor.id
@@ -136,47 +221,28 @@ def add_site(site):
         u'properties': {
             u'id': site_id,
             u'actorId': site_actor,
-            u'name': site_name
+            u'name': site_name,
+            u'description': site_description
         },
         u'type': u'Feature'
     }
 
     db.collection(u'sites').add(data)
 
+
 def update_site(site):
 
     site_id = site.id
+    site_name = site.name
+    site_description = site.description
 
     collection = db.collection(u'sites')
 
     documents = collection.where(u'properties.id', u'==', int(site_id)).get()
 
     for doc in documents:
-        collection.document(doc.id).update({u'properties.name': site.name})
-
-
-def remove_audio(audio):
-
-    audio_id = audio.id
-
-    collection = db.collection(u'audios')
-
-    documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
-
-    for doc in documents:
-        collection.document(doc.id).delete()
-
-
-def remove_advertisement(advertisement):
-
-    advertisement_id = advertisement.id
-
-    collection = db.collection(u'ads')
-
-    documents = collection.where(u'properties.id', u'==', int(advertisement_id)).get()
-
-    for doc in documents:
-        collection.document(doc.id).delete()
+        collection.document(doc.id).update({u'properties.name': site_name,
+                                            u'properties.description': site_description})
 
 
 def remove_site(site):
