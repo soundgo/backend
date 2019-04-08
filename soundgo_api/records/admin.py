@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Audio, Advertisement, Category, Like, Report
+from .models import Audio, Advertisement, Category, Like, Report, Reproduction
 
 
 class AudioAdmin(admin.ModelAdmin):
@@ -38,4 +38,5 @@ admin.site.register(Category, CategoryAdmin)
 # TODO: DELETE AFTER TESTS
 admin.site.register(Like)
 admin.site.register(Report)
+admin.site.register(Reproduction)
 

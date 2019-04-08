@@ -93,6 +93,20 @@ class Report(models.Model):
         return "Report"
 
 
+class Reproduction(models.Model):
+    advertisement = models.ForeignKey(Advertisement, on_delete=models.CASCADE, related_name="reproductions")
+    date = models.DateTimeField(auto_now_add=True, editable=False)
+    actor = models.ForeignKey(Actor, on_delete=models.CASCADE, related_name="reproductions")
+
+    class Meta:
+        db_table = 'reproduction'
+        verbose_name = 'Reproduction'
+        verbose_name_plural = 'Reproductions'
+
+    def __str__(self):
+        return 'Reproduction'
+
+
 # ################################################## #
 # #############        SIGNALS        ############## #
 # ################################################## #
