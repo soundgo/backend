@@ -12,6 +12,7 @@ from .serializers import ActorSerializer, CreditCardSerializer
 from rest_framework_jwt.views import obtain_jwt_token
 from django.db import transaction
 from rest_framework.parsers import JSONParser
+from django.contrib.auth import  get_user_model
 
 
 
@@ -152,6 +153,43 @@ def actor_get(request, nickname):
             return JSONResponse(response_actor_get, status= 400)
 
         return JSONResponse(data_aux)
+    else:
+        return JSONResponse(response_data_not_method, status=400)
+
+@csrf_exempt
+@transaction.atomic
+def actor_create(request):
+
+    response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the actor"}
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+
+    if request.method == 'POST':
+
+        try:
+            data = JSONParser().parse(request)
+
+            UserAccount = get_user_model()
+            user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
+
+            data_actor = {}
+            data_actor['user_account'] = user_account.id
+            data_actor['photo'] = data['photo']
+            data_actor['email'] = data['email']
+            data_actor["minutes"] = 300
+
+            serializer = ActorSerializer(data=data_actor)
+
+            if serializer.is_valid():
+                # Save in db
+                serializer.save()
+                return JSONResponse(serializer.data, status=201)
+            response_data_save["details"] = serializer.errors
+            return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError as e:
+            response_data_save["details"] = str(e)
+            return JSONResponse(response_data_save, status=400)
+
     else:
         return JSONResponse(response_data_not_method, status=400)
 
