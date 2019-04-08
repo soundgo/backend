@@ -13,7 +13,8 @@ from rest_framework_jwt.views import obtain_jwt_token
 from django.db import transaction
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import  get_user_model
-
+from managers.cloudinary_manager import remove_photo, upload_photo
+from django.core.validators import validate_email
 
 
 class JSONResponse(HttpResponse):
@@ -35,7 +36,7 @@ def login(request, role):
     response_not_valid = {"error": "TOKEN_NOT_VALID", "details": "The token is not valid"}
     actor_not_allowed = {"error": "ACTOR_NOT_ALLOWED", "details": "The actor can not do this action"}
 
-    print(request.META.get('HTTP_AUTHORIZATION'))
+
     if request.META.get('HTTP_AUTHORIZATION') == None or request.META.get('HTTP_AUTHORIZATION').strip() == "":
         return JSONResponse(response_not_token, status=400)
 
@@ -105,7 +106,7 @@ def get_token(request):
             valid_data = VerifyJSONWebTokenSerializer().validate({'token':jwt.data['token']})
             actor = Actor.objects.filter(user_account__nickname=valid_data['user']).all()[0]
 
-            print(actor)
+
             data["token"] = jwt.data['token']
 
             if actor.user_account.is_admin:
@@ -127,18 +128,29 @@ def get_token(request):
         return JSONResponse(response_data_not_method, status=400)
 
 
+
+
 @csrf_exempt
-def actor_get(request, nickname):
+@transaction.atomic
+def actor_get_update(request, nickname):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_actor_not_found = {"error": "ACTOR_NOT_FOUND", "details": "The actor does not exit"}
     response_actor_get = {"error": "ACTOR_GET", "details": "The actor does not exit"}
+    response_data_update = {"error": "UPDATE_ACTOR", "details": "There was an error to save the actor"}
+
+    login_result = login(request, 'advertiserUser')
+    if login_result is not True:
+        return login_result
 
     try:
 
         actor = Actor.objects.filter(user_account__nickname= nickname).all()[0]
     except Exception:
         return JSONResponse(response_actor_not_found, status=404)
+
+    if request.user.id != actor.user_account.id:
+        response_data_update = {"error": "ACTOR_NOT_ALLOWED", "details": "This actor can not edit or view this profile"}
 
     if request.method == 'GET':
 
@@ -153,6 +165,100 @@ def actor_get(request, nickname):
             return JSONResponse(response_actor_get, status= 400)
 
         return JSONResponse(data_aux)
+
+    elif request.method == 'PUT':
+        lastPhoto= None
+        try:
+            with transaction.atomic():
+
+                data = JSONParser().parse(request)
+
+                userAccount = UserAccount.objects.filter(nickname=nickname).all()[0]
+
+                # Check password
+                if data.get('password') != None:
+
+                    if data.get('password').strip() != "":
+                        userAccount.set_password(data.get('password'))
+                    else:
+                        return JSONResponse({"error": "UPDATE_ACTOR",
+                                             "details": "You must write a password"},
+                                            status=400)
+
+                # Check nickname
+                if data.get('nickname') != None:
+                    if len(UserAccount.objects.filter(
+                            nickname=data.get('nickname')).all()) != 0 and actor.user_account.nickname != data.get('nickname'):
+                        return JSONResponse({"error": "UPDATE_ACTOR",
+                                             "details": "This nickname is been using by another actor."},
+                                            status=400)
+
+                    elif data.get('nickname').strip() != "":
+                        userAccount.nickname = data.get('nickname')
+
+                    else:
+                        return JSONResponse({"error": "UPDATE_ACTOR",
+                                             "details": "You must write a nickname"},
+                                            status=400)
+
+                # Check email
+                if data.get('email') != None:
+                    if len(Actor.objects.filter(email=data.get('email')).all()) != 0 and actor.email != data.get(
+                            'email'):
+
+                        return JSONResponse({"error": "EMAIL_USED",
+                                             "details": "This email is been using by another actor."},
+                                            status=400)
+                    else:
+
+                        try:
+                            validate_email(data.get('email'))
+                            actor.email= data.get('email')
+                        except Exception:
+
+                            return JSONResponse({"error": "EMAIL_NOT_VALID",
+                                                 "details": "This email is not valid."},
+                                                status=400)
+
+
+                # check photo
+                changePhoto = False
+                if data.get('base64') != None:
+                    savePhoto = upload_photo(data.get('base64'))
+
+                    if savePhoto == "":
+                        raise Exception("There base64 of photo is not correct.")
+
+                    lastPhoto = actor.photo
+                    changePhoto = True
+                    actor.photo = savePhoto
+
+
+                #Save data
+                actor.save()
+                userAccount.save()
+
+                #Delete the old photo
+                if lastPhoto != None and lastPhoto != "" and changePhoto:
+                    removePhoto = remove_photo(lastPhoto)
+
+                    if removePhoto == False:
+                        raise Exception("There was a problem when try to remove last photo")
+
+
+                serializer = ActorSerializer(actor)
+
+                data = serializer.data
+
+
+                return JSONResponse(data)
+
+
+
+        except Exception or ValueError or KeyError as e:
+
+            response_data_update["details"] = str(e)
+            return JSONResponse(response_data_update, status=400)
     else:
         return JSONResponse(response_data_not_method, status=400)
 
@@ -160,7 +266,7 @@ def actor_get(request, nickname):
 @transaction.atomic
 def actor_create(request):
 
-    response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the actor"}
+    response_data_save = {"error": "SAVE_ACTOR", "details": "There was an error to save the actor"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
@@ -314,3 +420,8 @@ def pruned_serializer_credit_card_update(creditcard, data):
     data["expirationYear"] = creditcard.expirationYear
     data["cvvCode"] = creditcard.cvvCode
     return data
+
+
+
+
+
