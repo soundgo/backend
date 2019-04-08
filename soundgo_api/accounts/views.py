@@ -13,8 +13,9 @@ from rest_framework_jwt.views import obtain_jwt_token
 from django.db import transaction
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import  get_user_model
-from managers.cloudinary_manager import remove_photo, upload_photo
 from django.core.validators import validate_email
+from managers.cloudinary_manager import upload_photo, remove_photo
+
 
 
 class JSONResponse(HttpResponse):
@@ -279,7 +280,10 @@ def actor_create(request):
             user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
             data_actor['user_account'] = user_account.id
-            data_actor['photo'] =  upload_photo(data['base64'])
+            if 'base64' in data:
+                data_actor['photo'] =  upload_photo(data['base64'])
+            else:
+                data_actor['photo'] = ""
             data_actor['email'] = data['email']
             data_actor["minutes"] = 300
 
@@ -290,13 +294,14 @@ def actor_create(request):
                 serializer.save()
                 return JSONResponse(serializer.data, status=201)
             response_data_save["details"] = serializer.errors
-            remove_photo(data_actor['photo'])
+            if 'base64' in data:
+                remove_photo(data_actor['photo'])
             user_account.delete()
             return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
-            if 'photo' in data_actor:
+            if 'base64' in data and 'photo' in data_actor:
                 remove_photo(data_actor['photo'])
                 try:
                     if user_account:
@@ -424,8 +429,3 @@ def creditcard_update_get(request, creditcard_id):
 def pruned_serializer_credit_card_create(data):
     data['isDelete'] = False
     return data
-
-
-
-
-
