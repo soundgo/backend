@@ -19,7 +19,8 @@ from . import views
 
 urlpatterns = [
 
-    path('actor/<str:nickname>/', views.actor_get),
+    path('actor/<str:nickname>/', views.actor_get_update),
+    path('actor/', views.actor_create),
     path('creditcard/', views.creditcard_create),
     path('creditcard/<int:creditcard_id>/', views.creditcard_update_get),
 ]

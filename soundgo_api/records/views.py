@@ -3,10 +3,10 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from .models import Advertisement, Audio, Category, Like, Report
+from .models import Advertisement, Audio, Category, Like, Report, Reproduction
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer
-from datetime import datetime
+from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer, ReproductionSerializer
+from datetime import datetime, date
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
@@ -38,6 +38,8 @@ def advertisement_create(request):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
     response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD", "details": "Logged user does not have a credit card"}
+    response_price_negative = {"error": "MAX_PRICE_NEGATIVE", "details": "The max price can not be negative"}
+    response_radius_negative = {"error": "RADIUS_NEGATIVE", "details": "The radius is not in the valid range"}
 
     if request.method == 'POST':
 
@@ -64,6 +66,18 @@ def advertisement_create(request):
             try:
                 data['path'] = upload_record(data['base64'])
                 data = pruned_serializer_advertisement_create(data)
+                configuration = Configuration.objects.all()[0]
+
+                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data[
+                    "maxPriceToPay"] <= 0:
+                    remove_record(data['path'])
+                    return JSONResponse(response_price_negative, status=400)
+
+                if type(data["radius"]) is int and (
+                        data["radius"] < configuration.minimum_radius or data["radius"] > configuration.maximum_radius):
+                    remove_record(data['path'])
+                    return JSONResponse(response_radius_negative, status=400)
+
                 serializer = AdvertisementSerializer(data=data)
             except Exception:
                 if 'path' in data:
@@ -106,6 +120,7 @@ def advertisement_update_get(request, advertisement_id):
                                         "details": "The advertisement does not exit"}
     response_data_deleted = {"error": "DELETE_ADVERTISEMENT", "details": "The advertisement is deleted"}
     response_audio_not_belong = {"error": "AUDIO_NOT_BELONG", "details": "Audio creator is not logged user"}
+    response_price_negative = {"error": "MAX_PRICE_NEGATIVE", "details": "The max price can not be negative"}
 
     try:
         advertisement = Advertisement.objects.get(pk=advertisement_id)
@@ -148,6 +163,8 @@ def advertisement_update_get(request, advertisement_id):
             data = JSONParser().parse(request)
 
             data = pruned_serializer_advertisement_update(advertisement, data)
+            if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data["maxPriceToPay"] <= 0:
+                return JSONResponse(response_price_negative, status=400)
             serializer = AdvertisementSerializer(advertisement, data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -588,8 +605,25 @@ def advertisement_listen(request, advertisement_id):
             if login_result is True or login_result2 is True:
                 actor = Actor.objects.get(user_account=request.user.id)
                 if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
-                    actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
-                    actor.save()
+                    today = date.today()
+                    reproduction = Reproduction.objects.filter(actor__user_account=request.user.id).filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year, date__day=today.day)
+                    if len(reproduction) == 0:
+                        data_reproduction = {}
+                        data_reproduction['actor'] = actor.id
+                        data_reproduction['advertisement'] = ad.id
+                        data_reproduction['date'] = datetime.now()
+                        serializer = ReproductionSerializer(data=data_reproduction)
+                        if serializer.is_valid():
+                            serializer.save()
+                            actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+                            actor.save()
+                            reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
+                            if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
+                                ad.isActive = False
+                                ad.save()
+                        else:
+                            response_data_save["details"] = serializer.errors
+                            return JSONResponse(response_data_save, status=400)
 
             # Save the audio
             ad.save()
