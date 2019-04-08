@@ -294,7 +294,7 @@ def actor_create(request):
                 serializer.save()
                 return JSONResponse(serializer.data, status=201)
             response_data_save["details"] = serializer.errors
-            if 'base64' in data:
+            if 'base64' in data and data_actor['photo'] != "":
                 remove_photo(data_actor['photo'])
             user_account.delete()
             return JSONResponse(response_data_save, status=400)
