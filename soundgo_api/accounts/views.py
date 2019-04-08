@@ -266,20 +266,20 @@ def actor_get_update(request, nickname):
 @transaction.atomic
 def actor_create(request):
 
-    response_data_save = {"error": "SAVE_ACTOR", "details": "There was an error to save the actor"}
+    response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the actor"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
 
         try:
             data = JSONParser().parse(request)
+            data_actor = {}
 
             UserAccount = get_user_model()
             user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
-            data_actor = {}
             data_actor['user_account'] = user_account.id
-            data_actor['photo'] = data['photo']
+            data_actor['photo'] =  upload_photo(data['base64'])
             data_actor['email'] = data['email']
             data_actor["minutes"] = 300
 
@@ -290,15 +290,30 @@ def actor_create(request):
                 serializer.save()
                 return JSONResponse(serializer.data, status=201)
             response_data_save["details"] = serializer.errors
+            remove_photo(data_actor['photo'])
+            user_account.delete()
             return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
-            return JSONResponse(response_data_save, status=400)
+            if 'photo' in data_actor:
+                remove_photo(data_actor['photo'])
+                try:
+                    if user_account:
+                        user_account.delete()
+                except Exception:
+                    pass
+                return JSONResponse(response_data_save, status=400)
+            else:
+                try:
+                    if user_account:
+                        user_account.delete()
+                except Exception:
+                    pass
+                return JSONResponse(response_data_save, status=400)
 
     else:
         return JSONResponse(response_data_not_method, status=400)
-
 
 @csrf_exempt
 @transaction.atomic
@@ -390,7 +405,6 @@ def creditcard_update_get(request, creditcard_id):
         try:
             data = JSONParser().parse(request)
 
-            data = pruned_serializer_credit_card_update(credit_card, data)
             serializer = CreditCardSerializer(credit_card, data=data)
 
             if serializer.is_valid():
@@ -409,16 +423,6 @@ def creditcard_update_get(request, creditcard_id):
 
 def pruned_serializer_credit_card_create(data):
     data['isDelete'] = False
-    return data
-
-
-def pruned_serializer_credit_card_update(creditcard, data):
-    data["holderName"] = creditcard.holderName
-    data["brandName"] = creditcard.brandName
-    data["number"] = creditcard.number
-    data["expirationMonth"] = creditcard.expirationMonth
-    data["expirationYear"] = creditcard.expirationYear
-    data["cvvCode"] = creditcard.cvvCode
     return data
 
 
