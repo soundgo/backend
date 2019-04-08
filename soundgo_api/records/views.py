@@ -3,10 +3,10 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from .models import Advertisement, Audio, Category, Like, Report
+from .models import Advertisement, Audio, Category, Like, Report, Reproduction
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer
-from datetime import datetime
+from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer, ReproductionSerializer
+from datetime import datetime, date
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
@@ -588,8 +588,25 @@ def advertisement_listen(request, advertisement_id):
             if login_result is True or login_result2 is True:
                 actor = Actor.objects.get(user_account=request.user.id)
                 if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
-                    actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
-                    actor.save()
+                    today = date.today()
+                    reproduction = Reproduction.objects.filter(actor__user_account=request.user.id).filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year, date__day=today.day)
+                    if len(reproduction) == 0:
+                        data_reproduction = {}
+                        data_reproduction['actor'] = actor.id
+                        data_reproduction['advertisement'] = ad.id
+                        data_reproduction['date'] = datetime.now()
+                        serializer = ReproductionSerializer(data=data_reproduction)
+                        if serializer.is_valid():
+                            serializer.save()
+                            actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+                            actor.save()
+                            reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
+                            if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
+                                ad.isActive = False
+                                ad.save()
+                        else:
+                            response_data_save["details"] = serializer.errors
+                            return JSONResponse(response_data_save, status=400)
 
             # Save the audio
             ad.save()
