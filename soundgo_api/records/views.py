@@ -5,19 +5,18 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Advertisement, Audio, Category, Like, Report, Reproduction
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer, ReproductionSerializer
+from .serializers import (AdvertisementSerializer, AudioSerializer, LikeSerializer,
+                          ReportSerializer, ReproductionSerializer)
 from datetime import datetime, date
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
 from accounts.views import login
-from managers.firebase_manager import add_audio, add_advertisement, remove_advertisement
+from managers.firebase_manager import (add_audio, update_audio, add_advertisement,
+                                       update_advertisement, remove_advertisement)
 from configuration.models import Configuration
 from datetime import timedelta
 from tags.models import Tag
-from managers.firebase_manager import update_audio
-
-# TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
 
 class JSONResponse(HttpResponse):
@@ -169,7 +168,7 @@ def advertisement_update_get(request, advertisement_id):
                     return JSONResponse(response_price_negative, status=400)
                 serializer = AdvertisementSerializer(advertisement, data=data)
                 if serializer.is_valid():
-                    serializer.save()
+                    ad = serializer.save()
 
                     # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
                     if data['isDelete']:
@@ -179,6 +178,9 @@ def advertisement_update_get(request, advertisement_id):
                             return JSONResponse(response_data_put, status=400)
                         # Remove advertisement from Firebase Cloud Firestore
                         remove_advertisement(advertisement)
+
+                    # Update in Firebase
+                    update_advertisement(ad)
 
                     return JSONResponse(serializer.data)
                 response_data_put["details"] = serializer.errors
@@ -206,7 +208,6 @@ def audio_create(request):
         try:
             with transaction.atomic():
 
-                print(request)
                 data = JSONParser().parse(request)
 
                 login_result = login(request, 'advertiserUser')
@@ -381,7 +382,7 @@ def audio_delete_get_update(request, audio_id):
 
                 for tagName in tagsNameCheck:
                     tag = Tag.objects.filter(name=tagName).all()
-                    print(audio.tags.all())
+
                     if len(tag) == 0:
                         tag = Tag.objects.create(name=tagName)
                         audio.tags.add(tag)
@@ -559,7 +560,10 @@ def audio_listen(request, audio_id):
                 audio.numberReproductions = audio.numberReproductions + 1
 
                 # Save the audio
-                audio.save()
+                saved_audio = audio.save()
+
+                # Update in Firebase
+                update_audio(saved_audio)
 
                 return HttpResponse(status=204)
 
@@ -588,11 +592,6 @@ def advertisement_listen(request, advertisement_id):
             return JSONResponse(response_advertisement_not_found, status=404)
 
         try:
-            # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya
-            #  ese día el anuncio
-            # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda
-            #  primero una petición al get y devuelvo si el autenticado lo puede escuchar?), y si es la primera vez
-            #  que lo escuchas se crea un reproduction
 
             # logged actor
             with transaction.atomic():
@@ -625,13 +624,15 @@ def advertisement_listen(request, advertisement_id):
                                 reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
                                 if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
                                     ad.isActive = False
-                                    ad.save()
                             else:
                                 response_data_save["details"] = serializer.errors
                                 return JSONResponse(response_data_save, status=400)
 
                 # Save the audio
-                ad.save()
+                saved_ad = ad.save()
+
+                # Update in Firebase
+                update_advertisement(saved_ad)
 
                 return HttpResponse(status=204)
 
@@ -725,7 +726,10 @@ def like_create(request, audio_id):
                 if serializer.is_valid():
                     # Save in db
                     serializer.save()
-                    audio.save()
+                    saved_audio = audio.save()
+                    # Update in Firebase
+                    update_audio(saved_audio)
+
                     return JSONResponse(serializer.data, status=201)
                 response_data_save["details"] = serializer.errors
                 return JSONResponse(response_data_save, status=400)
@@ -772,7 +776,9 @@ def report_create(request, audio_id):
                     if len(reports) >= configuration.minimum_reports_ban and report.audio.isInappropriate is False:
                         audio = report.audio
                         audio.isInappropriate = True
-                        audio.save()
+                        saved_audio = audio.save()
+                        # Update in Firebase
+                        update_audio(saved_audio)
                     return JSONResponse(serializer.data, status=201)
                 response_data_save["details"] = serializer.errors
                 return JSONResponse(response_data_save, status=400)

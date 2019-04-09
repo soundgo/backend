@@ -2,6 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from records.models import Advertisement
 from accounts.models import CreditCard
+from sites.models import Site
 
 scheduler = BlockingScheduler()
 
@@ -30,6 +31,7 @@ def delete_marked_credit_card_job():
 
     for credit_card in credit_cards:
 
+        Site.objects.filter(actor__credit_card=credit_card).delete()
         Advertisement.objects.filter(actor__credit_card=credit_card).delete()
 
         credit_card.delete()
