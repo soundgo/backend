@@ -26,7 +26,23 @@ def delete_marked_credit_card_job():
     CRON job to delete the credit cards marked for deletion.
     """
 
-    CreditCard.objects.filter(isDelete=True).delete()
+    credit_cards = CreditCard.objects.filter(isDelete=True)
+
+    for credit_card in credit_cards:
+
+        Advertisement.objects.filter(actor__credit_card=credit_card).delete()
+
+        credit_card.delete()
+
+
+@scheduler.scheduled_job('cron', id='reactivate_inactive_advertisements_job_id', day='last', hour=3)
+def reactivate_inactive_advertisements_job():
+
+    """
+    CRON job to reactivate the inactive advertisements.
+    """
+
+    Advertisement.objects.filter(isActive=False).update(isActive=True)
 
 
 scheduler.start()
