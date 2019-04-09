@@ -15,6 +15,8 @@ from rest_framework.parsers import JSONParser
 from django.contrib.auth import  get_user_model
 from django.core.validators import validate_email
 from managers.cloudinary_manager import upload_photo, remove_photo
+from records.models import Advertisement, Audio, Reproduction, Report
+from sites.models import Site
 
 
 
@@ -138,6 +140,7 @@ def actor_get_update(request, nickname):
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_actor_not_found = {"error": "ACTOR_NOT_FOUND", "details": "The actor does not exit"}
     response_actor_get = {"error": "ACTOR_GET", "details": "The actor does not exit"}
+    response_actor_delete = {"error": "ACTOR_DELETE", "details": "The actor does not exit"}
     response_data_update = {"error": "UPDATE_ACTOR", "details": "There was an error to save the actor"}
 
     login_result = login(request, 'advertiserUser')
@@ -260,6 +263,61 @@ def actor_get_update(request, nickname):
 
             response_data_update["details"] = str(e)
             return JSONResponse(response_data_update, status=400)
+
+
+    elif request.method == 'DELETE':
+
+        try:
+
+
+
+            # delete reproductions
+            reproductions = Reproduction.objects.filter(actor=actor).all()
+            if reproductions:
+                for reproduction in reproductions:
+                    reproduction.delete()
+
+            # delete advertisements
+            ads = Advertisement.objects.filter(actor=actor).all()
+            if ads:
+                for ad in ads:
+                    ad.delete()
+
+            # delete audios
+            audios = Audio.objects.filter(actor=actor).all()
+            if audios:
+                for audio in audios:
+                    audio.delete()
+
+            # delete sites
+            sites = Site.objects.filter(actor=actor).all()
+            if sites:
+                for site in sites:
+                    site.delete()
+
+            #delete reports
+            reports = Report.objects.filter(actor=actor).all()
+            if reports:
+                for report in reports:
+                    report.delete()
+
+            ua = actor.user_account
+            ua.delete()
+
+            photo = actor.photo
+            photo.delete()
+
+
+
+            actor.delete()
+
+
+
+        except Exception or KeyError or ValueError as e:
+            response_actor_delete["details"] = str(e)
+            return JSONResponse(response_actor_delete, status=400)
+
+        return HttpResponse(status=204)
     else:
         return JSONResponse(response_data_not_method, status=400)
 
