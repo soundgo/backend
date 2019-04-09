@@ -560,10 +560,10 @@ def audio_listen(request, audio_id):
                 audio.numberReproductions = audio.numberReproductions + 1
 
                 # Save the audio
-                saved_audio = audio.save()
+                audio.save()
 
                 # Update in Firebase
-                update_audio(saved_audio)
+                update_audio(audio)
 
                 return HttpResponse(status=204)
 
@@ -629,10 +629,10 @@ def advertisement_listen(request, advertisement_id):
                                 return JSONResponse(response_data_save, status=400)
 
                 # Save the audio
-                saved_ad = ad.save()
+                ad.save()
 
                 # Update in Firebase
-                update_advertisement(saved_ad)
+                update_advertisement(ad)
 
                 return HttpResponse(status=204)
 
@@ -726,9 +726,9 @@ def like_create(request, audio_id):
                 if serializer.is_valid():
                     # Save in db
                     serializer.save()
-                    saved_audio = audio.save()
+                    audio.save()
                     # Update in Firebase
-                    update_audio(saved_audio)
+                    update_audio(audio)
 
                     return JSONResponse(serializer.data, status=201)
                 response_data_save["details"] = serializer.errors
@@ -776,9 +776,9 @@ def report_create(request, audio_id):
                     if len(reports) >= configuration.minimum_reports_ban and report.audio.isInappropriate is False:
                         audio = report.audio
                         audio.isInappropriate = True
-                        saved_audio = audio.save()
+                        audio.save()
                         # Update in Firebase
-                        update_audio(saved_audio)
+                        update_audio(audio)
                     return JSONResponse(serializer.data, status=201)
                 response_data_save["details"] = serializer.errors
                 return JSONResponse(response_data_save, status=400)
