@@ -5,6 +5,8 @@ from .models import Audio, Advertisement, Category, Like, Report, Reproduction
 
 class AudioAdmin(admin.ModelAdmin):
 
+    list_filter = ('isInappropriate', )
+
     def has_add_permission(self, request):
         return False
 
