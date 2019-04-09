@@ -267,52 +267,55 @@ def actor_get_update(request, nickname):
 @transaction.atomic
 def actor_create(request):
 
-    response_data_save = {"error": "SAVE_REPORT", "details": "There was an error to save the actor"}
+    response_data_save = {"error": "SAVE_ACTOR", "details": "There was an error to save the actor"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
 
     if request.method == 'POST':
 
         try:
-            data = JSONParser().parse(request)
-            data_actor = {}
+            with transaction.atomic():
+                data = JSONParser().parse(request)
+                data_actor = {}
 
-            UserAccount = get_user_model()
-            user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
+                UserAccount = get_user_model()
+                user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
-            data_actor['user_account'] = user_account.id
-            if 'base64' in data:
-                data_actor['photo'] =  upload_photo(data['base64'])
-            else:
-                data_actor['photo'] = ""
-            data_actor['email'] = data['email']
-            data_actor["minutes"] = 300
+                data_actor['user_account'] = user_account.id
+                if 'base64' in data:
+                    data_actor['photo'] =  upload_photo(data['base64'])
+                else:
+                    data_actor['photo'] = ""
+                data_actor['email'] = data['email']
+                data_actor["minutes"] = 300
 
-            serializer = ActorSerializer(data=data_actor)
+                serializer = ActorSerializer(data=data_actor)
 
-            if serializer.is_valid():
-                # Save in db
-                serializer.save()
-                return JSONResponse(serializer.data, status=201)
-            response_data_save["details"] = serializer.errors
-            if 'base64' in data and data_actor['photo'] != "":
-                remove_photo(data_actor['photo'])
-            user_account.delete()
-            return JSONResponse(response_data_save, status=400)
+                if serializer.is_valid():
+                    # Save in db
+                    serializer.save()
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                if 'base64' in data and data_actor['photo'] != "":
+                    remove_photo(data_actor['photo'])
+                user_account.delete()
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
             if 'base64' in data and 'photo' in data_actor:
                 remove_photo(data_actor['photo'])
                 try:
-                    if user_account:
-                        user_account.delete()
+                    with transaction.atomic():
+                        if user_account:
+                            user_account.delete()
                 except Exception:
                     pass
                 return JSONResponse(response_data_save, status=400)
             else:
                 try:
-                    if user_account:
-                        user_account.delete()
+                    with transaction.atomic():
+                        if user_account:
+                            user_account.delete()
                 except Exception:
                     pass
                 return JSONResponse(response_data_save, status=400)
@@ -334,20 +337,21 @@ def creditcard_create(request):
             return login_result
 
         try:
+            with transaction.atomic():
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            data = pruned_serializer_credit_card_create(data)
-            serializer = CreditCardSerializer(data=data)
-            if serializer.is_valid():
-                # Save in db
-                credit_card = serializer.save()
-                actor = Actor.objects.get(user_account=request.user.id)
-                actor.credit_card = credit_card
-                actor.save()
-                return JSONResponse(serializer.data, status=201)
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                data = pruned_serializer_credit_card_create(data)
+                serializer = CreditCardSerializer(data=data)
+                if serializer.is_valid():
+                    # Save in db
+                    credit_card = serializer.save()
+                    actor = Actor.objects.get(user_account=request.user.id)
+                    actor.credit_card = credit_card
+                    actor.save()
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
@@ -408,15 +412,16 @@ def creditcard_update_get(request, creditcard_id):
         if request.user.id != actor.user_account.id:
             return JSONResponse(response_creditcard_not_put, status=200)
         try:
-            data = JSONParser().parse(request)
+            with transaction.atomic():
+                data = JSONParser().parse(request)
 
-            serializer = CreditCardSerializer(credit_card, data=data)
+                serializer = CreditCardSerializer(credit_card, data=data)
 
-            if serializer.is_valid():
-                serializer.save()
-                return JSONResponse(serializer.data, status=200)
-            response_creditcard_put["details"] = serializer.errors
-            return JSONResponse(response_creditcard_put, status=400)
+                if serializer.is_valid():
+                    serializer.save()
+                    return JSONResponse(serializer.data, status=200)
+                response_creditcard_put["details"] = serializer.errors
+                return JSONResponse(response_creditcard_put, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_creditcard_put["details"] = str(e)
