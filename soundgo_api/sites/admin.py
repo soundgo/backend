@@ -18,7 +18,7 @@ class SiteAdmin(admin.ModelAdmin):
 
         self.readonly_fields = ('longitude', 'latitude', 'actor')
 
-        return super(SiteAdmin, self).change_view(request, object_id, extra_context)
+        return super(SiteAdmin, self).change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.register(Site, SiteAdmin)
