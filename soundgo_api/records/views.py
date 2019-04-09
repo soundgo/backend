@@ -178,9 +178,9 @@ def advertisement_update_get(request, advertisement_id):
                             return JSONResponse(response_data_put, status=400)
                         # Remove advertisement from Firebase Cloud Firestore
                         remove_advertisement(advertisement)
-
-                    # Update in Firebase
-                    update_advertisement(ad)
+                    else:
+                        # Update in Firebase
+                        update_advertisement(ad)
 
                     return JSONResponse(serializer.data)
                 response_data_put["details"] = serializer.errors
