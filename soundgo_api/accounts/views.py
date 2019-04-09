@@ -394,8 +394,7 @@ def creditcard_update_get(request, creditcard_id):
 
             serializer = CreditCardSerializer(credit_card)
             data_aux = serializer.data
-            data_aux["name"] = actor.user_account.nickname
-            data_aux["photo"] = actor.photo
+            data_aux["actor"] = actor.id
 
         except Exception or ValueError or KeyError as e:
             response_creditcard_get["details"] = str(e)
