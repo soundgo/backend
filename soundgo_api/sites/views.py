@@ -7,8 +7,6 @@ from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
 from accounts.views import login
-from copy import deepcopy
-from managers.firebase_manager import update_site, add_site
 
 
 class JSONResponse(HttpResponse):
@@ -57,8 +55,7 @@ def site_create(request):
             serializer = SiteSerializer(data=data)
             if serializer.is_valid():
                 # Save in db
-                site= serializer.save()
-                add_site(site)
+                serializer.save()
                 return JSONResponse(serializer.data, status=201)
             response_data_save["details"] = serializer.errors
             return JSONResponse(response_data_save, status=400)
@@ -131,8 +128,7 @@ def site_update_delete_get(request, site_id):
             data = pruned_serializer_site_update(site, data)
             serializer = SiteSerializer(site, data=data)
             if serializer.is_valid():
-                site= serializer.save()
-                update_site(site)
+                serializer.save()
                 return JSONResponse(serializer.data)
             response_data_put["details"] = serializer.errors
             return JSONResponse(response_data_put, status=400)
@@ -140,7 +136,6 @@ def site_update_delete_get(request, site_id):
         except Exception or ValueError or KeyError as e:
             response_data_put["details"] = str(e)
             return JSONResponse(response_data_put, status=400)
-
 
     elif request.method == 'DELETE':
 
