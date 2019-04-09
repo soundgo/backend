@@ -30,7 +30,7 @@ class Audio(Record):
     tags = models.ManyToManyField(Tag, blank=True)
     category = models.ForeignKey("Category", on_delete=models.CASCADE)
 
-    isInappropriate = models.BooleanField(default=False)
+    isInappropriate = models.BooleanField(verbose_name='Inappropriate', default=False)
     timestampCreation = models.DateTimeField(auto_now_add=True, editable=False)
     timestampFinish = models.DateTimeField()
 
