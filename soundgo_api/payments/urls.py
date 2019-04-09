@@ -18,5 +18,5 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('charge/', views.charge, name='charge'),
+    path('charge/<int:actor_id>/', views.charge, name='charge'),
 ]
