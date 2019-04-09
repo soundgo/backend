@@ -38,7 +38,4 @@ urlpatterns = [
     path('api-token-auth/', get_token),
     path('api-token-refresh/', refresh_jwt_token),
     path('api-token-verify/', verify_jwt_token),
-    # PAYMENTS
-    path('payment/', include('payments.urls')),
-
 ]

@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     'tags',
     'cloudinary',
     'corsheaders',
-    'payments',
 ]
 
 REST_FRAMEWORK = {
