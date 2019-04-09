@@ -4,7 +4,7 @@ from accounts.models import Actor
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
 
-from managers.firebase_manager import add_site, remove_site
+from managers.firebase_manager import add_site, update_site, remove_site
 
 # ################################################## #
 # ##############        MODELS        ############## #
@@ -28,15 +28,22 @@ class Site(models.Model):
 # #############        SIGNALS        ############## #
 # ################################################## #
 
-#@receiver(post_save, sender=Site)
-#def auto_create_site_in_third_party_services(sender, instance, **kwargs):
+@receiver(post_save, sender=Site)
+def auto_create_update_site_in_third_party_services(sender, instance, created, **kwargs):
 
     """
-    Signal to create the site in Firebase after PostgreSQL insertion.
+    Signal to create/update the site in Firebase after PostgreSQL insertion.
     """
 
-    # Create in Firebase
- #   add_site(instance)
+    if created:
+
+        # Create the site in Firebase
+        add_site(instance)
+
+    else:
+
+        # Update the site in Firebase
+        update_site(instance)
 
 
 @receiver(post_delete, sender=Site)
