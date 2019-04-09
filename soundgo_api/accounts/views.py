@@ -16,6 +16,7 @@ from django.contrib.auth import  get_user_model
 from django.core.validators import validate_email
 from managers.cloudinary_manager import upload_photo, remove_photo
 from records.models import Advertisement, Audio, Reproduction, Report
+import datetime
 from sites.models import Site
 
 
@@ -142,6 +143,7 @@ def actor_get_update(request, nickname):
     response_actor_get = {"error": "ACTOR_GET", "details": "The actor does not exit"}
     response_actor_delete = {"error": "ACTOR_DELETE", "details": "The actor does not exit"}
     response_data_update = {"error": "UPDATE_ACTOR", "details": "There was an error to save the actor"}
+    response_actor_belong = {"error": "DELETE_ACTOR", "details": "NOt possible to delete the account of another user"}
 
     login_result = login(request, 'advertiserUser')
     if login_result is not True:
@@ -267,50 +269,34 @@ def actor_get_update(request, nickname):
 
     elif request.method == 'DELETE':
 
+        login_result = login(request, 'advertiserUser')
+        login_result2 = login(request, 'admin')
+        if login_result is not True and login_result2 is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if actor_aux.id != actor.id:
+                return JSONResponse(response_actor_belong, status=400)
+
         try:
 
+            isDeleteable = is_deleteable(actor)
 
-
-            # delete reproductions
-            reproductions = Reproduction.objects.filter(actor=actor).all()
-            if reproductions:
-                for reproduction in reproductions:
-                    reproduction.delete()
-
-            # delete advertisements
-            ads = Advertisement.objects.filter(actor=actor).all()
-            if ads:
-                for ad in ads:
-                    ad.delete()
-
-            # delete audios
-            audios = Audio.objects.filter(actor=actor).all()
-            if audios:
-                for audio in audios:
-                    audio.delete()
-
-            # delete sites
-            sites = Site.objects.filter(actor=actor).all()
-            if sites:
-                for site in sites:
-                    site.delete()
-
-            #delete reports
-            reports = Report.objects.filter(actor=actor).all()
-            if reports:
-                for report in reports:
-                    report.delete()
+            if isDeleteable == False:
+                raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
+                            "advertisements")
 
             ua = actor.user_account
             ua.delete()
 
             photo = actor.photo
-            photo.delete()
+            removePhoto = remove_photo(photo)
 
-
+            if removePhoto == False:
+                raise Exception("There was a problem when try to remove last photo")
 
             actor.delete()
-
 
 
         except Exception or KeyError or ValueError as e:
@@ -320,6 +306,66 @@ def actor_get_update(request, nickname):
         return HttpResponse(status=204)
     else:
         return JSONResponse(response_data_not_method, status=400)
+
+
+
+@csrf_exempt
+@transaction.atomic
+def deleteable(request, nickname):
+
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_actor_not_found = {"error": "ACTOR_NOT_FOUND", "details": "The actor does not exit"}
+    response_actor_belong = {"error": "DELETE_ACTOR", "details": "NOt possible to delete the account of another user"}
+
+    try:
+
+        actor = Actor.objects.filter(user_account__nickname= nickname).all()[0]
+    except Exception:
+        return JSONResponse(response_actor_not_found, status=404)
+
+    if request.method == 'GET':
+
+        login_result = login(request, 'advertiser')
+        if login_result is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if actor_aux.id != actor.id:
+                return JSONResponse(response_actor_belong, status=400)
+
+        isDeleteable = is_deleteable(actor)
+
+        if isDeleteable == False:
+            raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
+                            "advertisements")
+
+    else:
+        return JSONResponse(response_data_not_method, status=400)
+
+
+
+def is_deleteable(actor):
+    result = False
+
+    ads = Advertisement.objects.filter(actor=actor).all()
+
+    reproductions = []
+
+    for ad in ads:
+        reproductions.extend(Reproduction.objects.filter(advertisement=ad).all())
+        if ad.isActive:
+            result = False
+
+    now = datetime.datetime.now()
+
+    for reproduction in reproductions:
+        if reproduction.date.month == now.month and reproduction.date.year == now.year:
+            result = False
+
+
+    return result
+
 
 @csrf_exempt
 @transaction.atomic
