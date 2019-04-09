@@ -176,6 +176,12 @@ def actor_get_update(request, nickname):
 
                 userAccount = UserAccount.objects.filter(nickname=nickname).all()[0]
 
+                # Check if the user pass is correct
+                if data.get('password') == None or not userAccount.check_password(data.get('password')):
+                    return JSONResponse({"error": "INCORRECT_PASSWORD",
+                                         "details": "Your current password is not correct"},
+                                        status=400)
+
                 # Check password
                 if data.get('password') != None:
 
@@ -212,14 +218,8 @@ def actor_get_update(request, nickname):
                                             status=400)
                     else:
 
-                        try:
-                            validate_email(data.get('email'))
-                            actor.email= data.get('email')
-                        except Exception:
+                        actor.email= data.get('email')
 
-                            return JSONResponse({"error": "EMAIL_NOT_VALID",
-                                                 "details": "This email is not valid."},
-                                                status=400)
 
 
                 # check photo
