@@ -32,33 +32,34 @@ def site_create(request):
     if request.method == 'POST':
 
         try:
+            with transaction.atomic():
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            # comprobar que tiene que ser un anunciante con tarjeta o ser administrador
+                # comprobar que tiene que ser un anunciante con tarjeta o ser administrador
 
-            login_result = login(request, 'advertiser')
-            login_result2 = login(request, 'admin')
+                login_result = login(request, 'advertiser')
+                login_result2 = login(request, 'admin')
 
-            if login_result is not True and login_result2 is not True:
-                return login_result
+                if login_result is not True and login_result2 is not True:
+                    return login_result
 
-            if login_result is True:
-                actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.credit_card is None:
-                    return JSONResponse(response_actor_not_credit_card, status=400)
+                if login_result is True:
+                    actor_aux = Actor.objects.get(user_account=request.user.id)
+                    if actor_aux.credit_card is None:
+                        return JSONResponse(response_actor_not_credit_card, status=400)
 
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
-            # Fin user de prueba
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                # Fin user de prueba
 
-            serializer = SiteSerializer(data=data)
-            if serializer.is_valid():
-                # Save in db
-                serializer.save()
-                return JSONResponse(serializer.data, status=201)
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                serializer = SiteSerializer(data=data)
+                if serializer.is_valid():
+                    # Save in db
+                    serializer.save()
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
@@ -123,15 +124,15 @@ def site_update_delete_get(request, site_id):
                 return JSONResponse(response_site_not_belong, status=400)
 
         try:
-
-            data = JSONParser().parse(request)
-            data = pruned_serializer_site_update(site, data)
-            serializer = SiteSerializer(site, data=data)
-            if serializer.is_valid():
-                serializer.save()
-                return JSONResponse(serializer.data)
-            response_data_put["details"] = serializer.errors
-            return JSONResponse(response_data_put, status=400)
+            with transaction.atomic():
+                data = JSONParser().parse(request)
+                data = pruned_serializer_site_update(site, data)
+                serializer = SiteSerializer(site, data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return JSONResponse(serializer.data)
+                response_data_put["details"] = serializer.errors
+                return JSONResponse(response_data_put, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_put["details"] = str(e)
@@ -151,9 +152,9 @@ def site_update_delete_get(request, site_id):
                 return JSONResponse(response_site_not_belong, status=400)
 
         try:
-
-            # Remove site from db
-            site.delete()
+            with transaction.atomic():
+                # Remove site from db
+                site.delete()
 
         except Exception or KeyError or ValueError as e:
             response_data_delete["details"] = str(e)
