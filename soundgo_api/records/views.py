@@ -5,19 +5,18 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from .models import Advertisement, Audio, Category, Like, Report, Reproduction
 from sites.models import Site
-from .serializers import AdvertisementSerializer, AudioSerializer, LikeSerializer, ReportSerializer, ReproductionSerializer
+from .serializers import (AdvertisementSerializer, AudioSerializer, LikeSerializer,
+                          ReportSerializer, ReproductionSerializer)
 from datetime import datetime, date
 from django.db import transaction
 from managers.cloudinary_manager import upload_record, remove_record, get_record_duration
 from accounts.models import Actor
 from accounts.views import login
-from managers.firebase_manager import add_audio, add_advertisement, remove_advertisement
+from managers.firebase_manager import (add_audio, update_audio, add_advertisement,
+                                       update_advertisement, remove_advertisement)
 from configuration.models import Configuration
 from datetime import timedelta
 from tags.models import Tag
-from managers.firebase_manager import update_audio
-
-# TODO comprobar que el usuario puede actualizar, borrar y crear cada objeto
 
 
 class JSONResponse(HttpResponse):
@@ -44,57 +43,58 @@ def advertisement_create(request):
     if request.method == 'POST':
 
         try:
+            with transaction.atomic():
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            # Comprobar que es anunciante
-            login_result = login(request, 'advertiser')
+                # Comprobar que es anunciante
+                login_result = login(request, 'advertiser')
 
-            if login_result is not True:
-                return login_result
+                if login_result is not True:
+                    return login_result
 
-            # Comprobar que que tiene tarjeta de credito
-            if login_result is True:
-                actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.credit_card is None:
-                    return JSONResponse(response_actor_not_credit_card, status=400)
+                # Comprobar que que tiene tarjeta de credito
+                if login_result is True:
+                    actor_aux = Actor.objects.get(user_account=request.user.id)
+                    if actor_aux.credit_card is None:
+                        return JSONResponse(response_actor_not_credit_card, status=400)
 
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
 
-            # coger el base 64 y guardar , meter en data['path'] la url que retorne
-            try:
-                data['path'] = upload_record(data['base64'])
-                data = pruned_serializer_advertisement_create(data)
-                configuration = Configuration.objects.all()[0]
+                # coger el base 64 y guardar , meter en data['path'] la url que retorne
+                try:
+                    data['path'] = upload_record(data['base64'])
+                    data = pruned_serializer_advertisement_create(data)
+                    configuration = Configuration.objects.all()[0]
 
-                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and \
-                        data["maxPriceToPay"] <= 0:
-                    remove_record(data['path'])
-                    return JSONResponse(response_price_negative, status=400)
+                    if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and \
+                            data["maxPriceToPay"] <= 0:
+                        remove_record(data['path'])
+                        return JSONResponse(response_price_negative, status=400)
 
-                if type(data["radius"]) is int and (
-                        data["radius"] < configuration.minimum_radius or data["radius"] > configuration.maximum_radius):
-                    remove_record(data['path'])
-                    return JSONResponse(response_radius_negative, status=400)
+                    if type(data["radius"]) is int and (
+                            data["radius"] < configuration.minimum_radius or data["radius"] > configuration.maximum_radius):
+                        remove_record(data['path'])
+                        return JSONResponse(response_radius_negative, status=400)
 
-                serializer = AdvertisementSerializer(data=data)
-            except Exception:
-                if 'path' in data:
-                    remove_record(data['path'])
-                    return JSONResponse(response_data_save, status=400)
-                else:
-                    return JSONResponse(response_data_save, status=400)
+                    serializer = AdvertisementSerializer(data=data)
+                except Exception:
+                    if 'path' in data:
+                        remove_record(data['path'])
+                        return JSONResponse(response_data_save, status=400)
+                    else:
+                        return JSONResponse(response_data_save, status=400)
 
-            if serializer.is_valid():
-                # Save in db
-                advertisement = serializer.save()
-                # Save in Firebase Cloud Firestore
-                add_advertisement(advertisement)
-                return JSONResponse(serializer.data, status=201)
-            remove_record(data['path'])
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                if serializer.is_valid():
+                    # Save in db
+                    advertisement = serializer.save()
+                    # Save in Firebase Cloud Firestore
+                    add_advertisement(advertisement)
+                    return JSONResponse(serializer.data, status=201)
+                remove_record(data['path'])
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
             response_data_save["details"] = str(e)
@@ -146,41 +146,45 @@ def advertisement_update_get(request, advertisement_id):
     elif request.method == 'PUT':
 
         try:
+            with transaction.atomic():
 
-            login_result = login(request, 'advertiser')
-            if login_result is not True:
-                return login_result
+                login_result = login(request, 'advertiser')
+                if login_result is not True:
+                    return login_result
 
-            # Comprobar que el creador del audio es el usuario autenticado
-            if login_result is True:
-                actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.id != advertisement.actor.id:
-                    return JSONResponse(response_audio_not_belong, status=400)
+                # Comprobar que el creador del audio es el usuario autenticado
+                if login_result is True:
+                    actor_aux = Actor.objects.get(user_account=request.user.id)
+                    if actor_aux.id != advertisement.actor.id:
+                        return JSONResponse(response_audio_not_belong, status=400)
 
-            if advertisement.isDelete is True:
-                return JSONResponse(response_data_deleted, status=400)
+                if advertisement.isDelete is True:
+                    return JSONResponse(response_data_deleted, status=400)
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            data = pruned_serializer_advertisement_update(advertisement, data)
-            if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data["maxPriceToPay"] <= 0:
-                return JSONResponse(response_price_negative, status=400)
-            serializer = AdvertisementSerializer(advertisement, data=data)
-            if serializer.is_valid():
-                serializer.save()
+                data = pruned_serializer_advertisement_update(advertisement, data)
+                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data["maxPriceToPay"] <= 0:
+                    return JSONResponse(response_price_negative, status=400)
+                serializer = AdvertisementSerializer(advertisement, data=data)
+                if serializer.is_valid():
+                    ad = serializer.save()
 
-                # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
-                if data['isDelete']:
-                    # Borrar grabacion de servidor
-                    result = remove_record(advertisement.path)
-                    if not result:
-                        return JSONResponse(response_data_put, status=400)
-                    # Remove advertisement from Firebase Cloud Firestore
-                    remove_advertisement(advertisement)
+                    # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
+                    if data['isDelete']:
+                        # Borrar grabacion de servidor
+                        result = remove_record(advertisement.path)
+                        if not result:
+                            return JSONResponse(response_data_put, status=400)
+                        # Remove advertisement from Firebase Cloud Firestore
+                        remove_advertisement(advertisement)
 
-                return JSONResponse(serializer.data)
-            response_data_put["details"] = serializer.errors
-            return JSONResponse(response_data_put, status=400)
+                    # Update in Firebase
+                    update_advertisement(ad)
+
+                    return JSONResponse(serializer.data)
+                response_data_put["details"] = serializer.errors
+                return JSONResponse(response_data_put, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_put["details"] = str(e)
@@ -202,57 +206,57 @@ def audio_create(request):
     if request.method == 'POST':
 
         try:
+            with transaction.atomic():
 
-            print(request)
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            login_result = login(request, 'advertiserUser')
-            if login_result is not True:
-                return login_result
+                login_result = login(request, 'advertiserUser')
+                if login_result is not True:
+                    return login_result
 
-            # El creador del audio es el usuario autenticado
+                # El creador del audio es el usuario autenticado
 
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
-            # Fin user de prueba
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                # Fin user de prueba
 
-            # Coger el base 64 y guardar , meter en data['path'] la url que retorne
-            try:
-                data['path'] = upload_record(data['base64'])
+                # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+                try:
+                    data['path'] = upload_record(data['base64'])
 
-                if data['path'] == '':
-                    return JSONResponse(response_data_incorrect_base64, status=400)
+                    if data['path'] == '':
+                        return JSONResponse(response_data_incorrect_base64, status=400)
 
-                data = pruned_serializer_audio_create(data)
-                serializer = AudioSerializer(data=data)
-            except Exception:
-                if 'path' in data:
+                    data = pruned_serializer_audio_create(data)
+                    serializer = AudioSerializer(data=data)
+                except Exception:
+                    if 'path' in data:
+                        remove_record(data['path'])
+                        return JSONResponse(response_data_save, status=400)
+                    else:
+                        return JSONResponse(response_data_save, status=400)
+
+                # Ver si cumple los tiempos
+                duration = data['duration']
+                if actor.minutes < duration:
                     remove_record(data['path'])
-                    return JSONResponse(response_data_save, status=400)
+                    return JSONResponse(response_data_not_minutes, status=400)
                 else:
-                    return JSONResponse(response_data_save, status=400)
+                    actor.minutes = actor.minutes - duration
 
-            # Ver si cumple los tiempos
-            duration = data['duration']
-            if actor.minutes < duration:
+                if serializer.is_valid():
+                    # Save in db
+                    audio = serializer.save()
+                    # Save in Firebase Cloud Firestore
+                    add_audio(audio)
+                    # Save actor with new minutes
+                    actor.save()
+                    data_aux = serializer.data
+                    data_aux["category"] = audio.category.name
+                    return JSONResponse(data_aux, status=201)
                 remove_record(data['path'])
-                return JSONResponse(response_data_not_minutes, status=400)
-            else:
-                actor.minutes = actor.minutes - duration
-
-            if serializer.is_valid():
-                # Save in db
-                audio = serializer.save()
-                # Save in Firebase Cloud Firestore
-                add_audio(audio)
-                # Save actor with new minutes
-                actor.save()
-                data_aux = serializer.data
-                data_aux["category"] = audio.category.name
-                return JSONResponse(data_aux, status=201)
-            remove_record(data['path'])
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
             response_data_save["details"] = str(e)
@@ -321,19 +325,19 @@ def audio_delete_get_update(request, audio_id):
     elif request.method == 'DELETE':
 
         try:
+            with transaction.atomic():
+                # Comprobar que solo lo puede borrar el creador del audio o un administrador
+                login_result = login(request, 'advertiserUser')
+                login_result2 = login(request, 'admin')
+                if login_result is not True and login_result2 is not True:
+                    return login_result
 
-            # Comprobar que solo lo puede borrar el creador del audio o un administrador
-            login_result = login(request, 'advertiserUser')
-            login_result2 = login(request, 'admin')
-            if login_result is not True and login_result2 is not True:
-                return login_result
+                if login_result is True:
+                    actor_aux = Actor.objects.get(user_account=request.user.id)
+                    if actor_aux.id != audio.actor.id:
+                        return JSONResponse(response_audio_not_belong, status=400)
 
-            if login_result is True:
-                actor_aux = Actor.objects.get(user_account=request.user.id)
-                if actor_aux.id != audio.actor.id:
-                    return JSONResponse(response_audio_not_belong, status=400)
-
-            audio.delete()
+                audio.delete()
 
         except Exception or KeyError or ValueError as e:
             response_audio_delete["details"] = str(e)
@@ -378,7 +382,7 @@ def audio_delete_get_update(request, audio_id):
 
                 for tagName in tagsNameCheck:
                     tag = Tag.objects.filter(name=tagName).all()
-                    print(audio.tags.all())
+
                     if len(tag) == 0:
                         tag = Tag.objects.create(name=tagName)
                         audio.tags.add(tag)
@@ -442,45 +446,46 @@ def audio_site_create(request, site_id):
             return login_result
 
         try:
+            with transaction.atomic():
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            # Comprobar que el creador del audio es el usuario autenticado
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
-            # Fin user de prueba
-            try:
-                data = pruned_serializer_audio_create_site(data, site_id)
-                # Metemos en el audio el site
-                data['site'] = site_id
-                serializer = AudioSerializer(data=data)
+                # Comprobar que el creador del audio es el usuario autenticado
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                # Fin user de prueba
+                try:
+                    data = pruned_serializer_audio_create_site(data, site_id)
+                    # Metemos en el audio el site
+                    data['site'] = site_id
+                    serializer = AudioSerializer(data=data)
 
-                # Coger el base 64 y guardar , meter en data['path'] la url que retorne
-                data['path'] = upload_record(data['base64'])
-            except Exception:
-                if 'path' in data:
+                    # Coger el base 64 y guardar , meter en data['path'] la url que retorne
+                    data['path'] = upload_record(data['base64'])
+                except Exception:
+                    if 'path' in data:
+                        remove_record(data['path'])
+                        return JSONResponse(response_data_save, status=400)
+                    else:
+                        return JSONResponse(response_data_save, status=400)
+
+                # Ver si cumple los tiempos
+                duration = get_record_duration(data['path'])
+                if actor.minutes < duration:
                     remove_record(data['path'])
-                    return JSONResponse(response_data_save, status=400)
+                    return JSONResponse(response_data_not_minutes, status=400)
                 else:
-                    return JSONResponse(response_data_save, status=400)
+                    actor.minutes = actor.minutes - duration
 
-            # Ver si cumple los tiempos
-            duration = get_record_duration(data['path'])
-            if actor.minutes < duration:
+                if serializer.is_valid():
+                    audio = serializer.save()
+                    actor.save()
+                    data_aux = serializer.data
+                    data_aux["category"] = audio.category.name
+                    return JSONResponse(data_aux, status=201)
                 remove_record(data['path'])
-                return JSONResponse(response_data_not_minutes, status=400)
-            else:
-                actor.minutes = actor.minutes - duration
-
-            if serializer.is_valid():
-                audio = serializer.save()
-                actor.save()
-                data_aux = serializer.data
-                data_aux["category"] = audio.category.name
-                return JSONResponse(data_aux, status=201)
-            remove_record(data['path'])
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or KeyError or ValueError as e:
             response_data_save["details"] = str(e)
@@ -550,13 +555,17 @@ def audio_listen(request, audio_id):
             return JSONResponse(response_audio_not_found, status=404)
 
         try:
+            with transaction.atomic():
 
-            audio.numberReproductions = audio.numberReproductions + 1
+                audio.numberReproductions = audio.numberReproductions + 1
 
-            # Save the audio
-            audio.save()
+                # Save the audio
+                saved_audio = audio.save()
 
-            return HttpResponse(status=204)
+                # Update in Firebase
+                update_audio(saved_audio)
+
+                return HttpResponse(status=204)
 
         except Exception or KeyError or ValueError as e:
             response_data_save["details"] = str(e)
@@ -583,51 +592,49 @@ def advertisement_listen(request, advertisement_id):
             return JSONResponse(response_advertisement_not_found, status=404)
 
         try:
-            # TODO user de prueba, hay que coger el user logueado y en el futuro comprobar si no lo ha escuchado ya
-            #  ese día el anuncio
-            # TODO si estas logueado solo puedes escuchar el anuncio una vez al día (esto cómo se controla, me manda
-            #  primero una petición al get y devuelvo si el autenticado lo puede escuchar?), y si es la primera vez
-            #  que lo escuchas se crea un reproduction
 
             # logged actor
+            with transaction.atomic():
 
-            ad.numberReproductions = ad.numberReproductions + 1
+                ad.numberReproductions = ad.numberReproductions + 1
 
-            duration = get_record_duration(ad.path)
+                duration = get_record_duration(ad.path)
 
-            configuration = Configuration.objects.all()[0]
+                configuration = Configuration.objects.all()[0]
 
-            # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
-            login_result = login(request, 'user')
-            login_result2 = login(request, 'advertiser')
+                # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
+                login_result = login(request, 'user')
+                login_result2 = login(request, 'advertiser')
 
-            if login_result is True or login_result2 is True:
-                actor = Actor.objects.get(user_account=request.user.id)
-                if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
-                    today = date.today()
-                    reproduction = Reproduction.objects.filter(actor__user_account=request.user.id).filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year, date__day=today.day)
-                    if len(reproduction) == 0:
-                        data_reproduction = {}
-                        data_reproduction['actor'] = actor.id
-                        data_reproduction['advertisement'] = ad.id
-                        data_reproduction['date'] = datetime.now()
-                        serializer = ReproductionSerializer(data=data_reproduction)
-                        if serializer.is_valid():
-                            serializer.save()
-                            actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
-                            actor.save()
-                            reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
-                            if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
-                                ad.isActive = False
-                                ad.save()
-                        else:
-                            response_data_save["details"] = serializer.errors
-                            return JSONResponse(response_data_save, status=400)
+                if login_result is True or login_result2 is True:
+                    actor = Actor.objects.get(user_account=request.user.id)
+                    if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
+                        today = date.today()
+                        reproduction = Reproduction.objects.filter(actor__user_account=request.user.id).filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year, date__day=today.day)
+                        if len(reproduction) == 0:
+                            data_reproduction = {}
+                            data_reproduction['actor'] = actor.id
+                            data_reproduction['advertisement'] = ad.id
+                            data_reproduction['date'] = datetime.now()
+                            serializer = ReproductionSerializer(data=data_reproduction)
+                            if serializer.is_valid():
+                                serializer.save()
+                                actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+                                actor.save()
+                                reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
+                                if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
+                                    ad.isActive = False
+                            else:
+                                response_data_save["details"] = serializer.errors
+                                return JSONResponse(response_data_save, status=400)
 
-            # Save the audio
-            ad.save()
+                # Save the audio
+                saved_ad = ad.save()
 
-            return HttpResponse(status=204)
+                # Update in Firebase
+                update_advertisement(saved_ad)
+
+                return HttpResponse(status=204)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
@@ -700,28 +707,32 @@ def like_create(request, audio_id):
             return login_result
 
         try:
+            with transaction.atomic():
 
-            data = {}
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
-            data['audio'] = audio_id
+                data = {}
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                data['audio'] = audio_id
 
-            serializer = LikeSerializer(data=data)
+                serializer = LikeSerializer(data=data)
 
-            audio = Audio.objects.get(id=audio_id)
-            audio.timestampFinish = audio.timestampFinish + timedelta(
-                seconds=Configuration.objects.all()[0].time_extend_audio)
+                audio = Audio.objects.get(id=audio_id)
+                audio.timestampFinish = audio.timestampFinish + timedelta(
+                    seconds=Configuration.objects.all()[0].time_extend_audio)
 
-            if len(Like.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
-                return JSONResponse(response_liked, status=400)
+                if len(Like.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
+                    return JSONResponse(response_liked, status=400)
 
-            if serializer.is_valid():
-                # Save in db
-                serializer.save()
-                audio.save()
-                return JSONResponse(serializer.data, status=201)
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                if serializer.is_valid():
+                    # Save in db
+                    serializer.save()
+                    saved_audio = audio.save()
+                    # Update in Firebase
+                    update_audio(saved_audio)
+
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
@@ -746,28 +757,31 @@ def report_create(request, audio_id):
             return login_result
 
         try:
-            configuration = Configuration.objects.all()[0]
-            data = {}
-            actor = Actor.objects.get(user_account=request.user.id)
-            data['actor'] = actor.id
-            # Fin user de prueba
-            data['audio'] = audio_id
-            serializer = ReportSerializer(data=data)
+            with transaction.atomic():
+                configuration = Configuration.objects.all()[0]
+                data = {}
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                # Fin user de prueba
+                data['audio'] = audio_id
+                serializer = ReportSerializer(data=data)
 
-            if len(Report.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
-                return JSONResponse(response_reported, status=400)
+                if len(Report.objects.filter(audio=audio_id).filter(actor__user_account=request.user.id)) != 0:
+                    return JSONResponse(response_reported, status=400)
 
-            if serializer.is_valid():
-                # Save in db
-                report = serializer.save()
-                reports = Report.objects.filter(audio=audio_id)
-                if len(reports) >= configuration.minimum_reports_ban and report.audio.isInappropriate is False:
-                    audio = report.audio
-                    audio.isInappropriate = True
-                    audio.save()
-                return JSONResponse(serializer.data, status=201)
-            response_data_save["details"] = serializer.errors
-            return JSONResponse(response_data_save, status=400)
+                if serializer.is_valid():
+                    # Save in db
+                    report = serializer.save()
+                    reports = Report.objects.filter(audio=audio_id)
+                    if len(reports) >= configuration.minimum_reports_ban and report.audio.isInappropriate is False:
+                        audio = report.audio
+                        audio.isInappropriate = True
+                        saved_audio = audio.save()
+                        # Update in Firebase
+                        update_audio(saved_audio)
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)

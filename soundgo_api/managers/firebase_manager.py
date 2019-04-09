@@ -99,18 +99,31 @@ def add_audio(audio):
     db.collection(u'audios').add(data)
 
 
-def update_audio(audio, tags):
+def update_audio(audio, tags=None):
 
     audio_id = audio.id
     audio_category = audio.category.name
+    audio_is_inappropriate = audio.isInappropriate
+    audio_timestamp_finish = audio.timestampFinish
+    audio_number_reproductions = audio.numberReproductions
 
     collection = db.collection(u'audios')
 
     documents = collection.where(u'properties.id', u'==', int(audio_id)).get()
 
-    for doc in documents:
-        collection.document(doc.id).update({u'properties.tags': tags,
-                                            u'properties.type': audio_category})
+    if tags:
+        for doc in documents:
+            collection.document(doc.id).update({u'properties.tags': tags,
+                                                u'properties.type': audio_category,
+                                                u'properties.isInappropriate': audio_is_inappropriate,
+                                                u'properties.timestampFinish': audio_timestamp_finish,
+                                                u'properties.numberReproductions': audio_number_reproductions})
+    else:
+        for doc in documents:
+            collection.document(doc.id).update({u'properties.type': audio_category,
+                                                u'properties.isInappropriate': audio_is_inappropriate,
+                                                u'properties.timestampFinish': audio_timestamp_finish,
+                                                u'properties.numberReproductions': audio_number_reproductions})
 
 
 def remove_audio(audio):
@@ -171,6 +184,7 @@ def add_advertisement(advertisement):
 def update_advertisement(advertisement):
 
     advertisement_id = advertisement.id
+    advertisement_number_reproductions = advertisement.numberReproductions
     advertisement_max_price_to_pay = advertisement.maxPriceToPay
     advertisement_is_active = advertisement.isActive
     advertisement_is_delete = advertisement.isDelete
@@ -180,7 +194,8 @@ def update_advertisement(advertisement):
     documents = collection.where(u'properties.id', u'==', int(advertisement_id)).get()
 
     for doc in documents:
-        collection.document(doc.id).update({u'properties.maxPriceToPay': advertisement_max_price_to_pay,
+        collection.document(doc.id).update({u'properties.numberReproductions': advertisement_number_reproductions,
+                                            u'properties.maxPriceToPay': advertisement_max_price_to_pay,
                                             u'properties.isActive': advertisement_is_active,
                                             u'properties.isDelete': advertisement_is_delete})
 
