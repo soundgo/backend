@@ -15,8 +15,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include
-from django.urls import path
+from django.urls import path, include
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token, verify_jwt_token
 from accounts.views import get_token
 
@@ -39,4 +38,7 @@ urlpatterns = [
     path('api-token-auth/', get_token),
     path('api-token-refresh/', refresh_jwt_token),
     path('api-token-verify/', verify_jwt_token),
+    # PAYMENTS
+    path('payment/', include('payments.urls')),
+
 ]
