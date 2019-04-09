@@ -6,9 +6,10 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
-from datetime import datetime
+from datetime import datetime, date
 from accounts.views import login
 from accounts.models import Actor
+from records.models import Advertisement, Reproduction
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -26,7 +27,7 @@ class JSONResponse(HttpResponse):
 
 @csrf_exempt
 @transaction.atomic
-def charge(request):
+def charge(request, actor_id):
 
     response_data_save = {"error": "SAVE_CHARGE", "details": "There was an error to save the charge"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
@@ -35,11 +36,18 @@ def charge(request):
         try:
 
             login(request, 'advertiser')
-            creditcard = Actor.objects.get(user_account=request.user.id).credit_card
+            creditcard = Actor.objects.get(pk=actor_id).credit_card
             print(creditcard)
+            amount = 0
+            advertisements = Advertisement.objects.filter(actor=actor_id)
+            today = date.today()
+            for ad in advertisements:
+                reproductions = len(Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month,
+                                                                                        date__year=today.year))
+                amount = amount + (0.01 * reproductions * ad.duration * ad.radius/10000)
 
             charge = stripe.Charge.create(
-                amount = 500,
+                amount = amount,
                 currency = 'eur',
                 description = 'SoundGo advertising ' + str(datetime.now().month) + "/" + str(datetime.now().year),
                 # customer = str(request.user.nickname),
