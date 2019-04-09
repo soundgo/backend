@@ -14,7 +14,9 @@ from django.db import transaction
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import  get_user_model
 from django.core.validators import validate_email
-from managers.cloudinary_manager import upload_photo, remove_photo
+from managers.cloudinary_manager import upload_photo, remove_photo, remove_record
+from records.models import Advertisement
+from managers.firebase_manager import remove_advertisement
 
 
 
@@ -371,6 +373,8 @@ def creditcard_update_get(request, creditcard_id):
     response_creditcard_put = {"error": "PUT_CREDITCARD", "details": "There was an error to update the creditcard"}
     response_creditcard_not_put = {"error": "NOT_PUT_CREDITCARD", "details": "You can not update the credit card"}
     response_creditcard_get = {"error": "NOT_GET_CREDITCARD", "details": "You can not update the credit card"}
+    response_data_put = {"error": "DELETE_CREDITCARD", "details": "There was an error to "
+                                                                     "delete the creditcard"}
 
     try:
         credit_card = CreditCard.objects.get(pk=creditcard_id)
@@ -417,7 +421,18 @@ def creditcard_update_get(request, creditcard_id):
                 serializer = CreditCardSerializer(credit_card, data=data)
 
                 if serializer.is_valid():
-                    serializer.save()
+                    credit_card = serializer.save()
+                    if credit_card.isDelete is True:
+                        advertisements = Advertisement.objects.filter(actor=actor.id)
+                        for ad in advertisements:
+                            if ad.isDelete is False:
+                                ad.isDelete = True
+                                ad.save()
+                                result = remove_record(ad.path)
+                                if not result:
+                                    return JSONResponse(response_data_put, status=400)
+                                # Remove advertisement from Firebase Cloud Firestore
+                                remove_advertisement(ad)
                     return JSONResponse(serializer.data, status=200)
                 response_creditcard_put["details"] = serializer.errors
                 return JSONResponse(response_creditcard_put, status=400)
