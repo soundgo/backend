@@ -360,15 +360,12 @@ def is_deleteable(actor):
 
     for ad in ads:
         reproductions.extend(Reproduction.objects.filter(advertisement=ad).all())
-        if ad.isActive:
-            result = False
 
     now = datetime.datetime.now()
 
     for reproduction in reproductions:
         if reproduction.date.month == now.month and reproduction.date.year == now.year:
             result = False
-
 
     return result
 
@@ -559,3 +556,4 @@ def creditcard_update_get(request, creditcard_id):
 def pruned_serializer_credit_card_create(data):
     data['isDelete'] = False
     return data
+
