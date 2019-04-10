@@ -248,9 +248,6 @@ def actor_get_update_delete(request, nickname):
                 if lastPhoto != None and lastPhoto != "" and changePhoto:
                     removePhoto = remove_photo(lastPhoto)
 
-                    if removePhoto == False:
-                        raise Exception("There was a problem when try to remove last photo")
-
 
                 serializer = ActorSerializer(actor)
 
