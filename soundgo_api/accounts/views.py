@@ -292,10 +292,8 @@ def actor_get_update_delete(request, nickname):
                 return JSONResponse(response_actor_delete, status=400)
 
             photo = actor.photo
-            removePhoto = remove_photo(photo)
+            remove_photo(photo)
 
-            if removePhoto == False:
-                raise Exception("There was a problem when try to remove last photo")
 
             actor.delete()
 
