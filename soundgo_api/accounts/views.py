@@ -62,13 +62,13 @@ def login(request, role):
 
             elif role == "advertiser":
                 actor= Actor.objects.filter(user_account= request.user).all()[0]
-                if actor.credit_card == None or request.user.admin: #Segunda condicion nueva
+                if actor.credit_card == None or actor.credit_card.isDelete is True or request.user.admin: #Segunda condicion nueva
                     return JSONResponse(actor_not_allowed, status=400)
 
             elif role == "user":
                 #Verificar q no tenga tarjeta y no sea admin
                 actor = Actor.objects.filter(user_account=request.user).all()[0]
-                if actor.credit_card != None or request.user.admin:
+                if (actor.credit_card != None and actor.credit_card.isDelete is False) or request.user.admin:
                     return JSONResponse(actor_not_allowed, status=400)
 
             elif role == "advertiserUser":
@@ -193,7 +193,7 @@ def actor_get_update_delete(request, nickname):
                     if data.get('password').strip() != "":
                         userAccount.set_password(data.get('password'))
                     else:
-                        return JSONResponse({"error": "UPDATE_ACTOR",
+                        return JSONResponse({"error": "PASSWORD_NOT_VALID",
                                              "details": "You must write a password"},
                                             status=400)
 
@@ -201,7 +201,7 @@ def actor_get_update_delete(request, nickname):
                 if data.get('nickname') != None:
                     if len(UserAccount.objects.filter(
                             nickname=data.get('nickname')).all()) != 0 and actor.user_account.nickname != data.get('nickname'):
-                        return JSONResponse({"error": "UPDATE_ACTOR",
+                        return JSONResponse({"error": "NICKNAME_USED",
                                              "details": "This nickname is been using by another actor."},
                                             status=400)
 
@@ -209,7 +209,7 @@ def actor_get_update_delete(request, nickname):
                         userAccount.nickname = data.get('nickname')
 
                     else:
-                        return JSONResponse({"error": "UPDATE_ACTOR",
+                        return JSONResponse({"error": "NICKNAME_NOT_VALID",
                                              "details": "You must write a nickname"},
                                             status=400)
 
@@ -442,6 +442,9 @@ def creditcard_create(request):
 
     response_data_save = {"error": "SAVE_CREDITCARD", "details": "There was an error to save the credit card"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_creditcard_is_delete = {"error": "OWN_CREDITCARD", "details": "The user has a creditcard marked as deleted"}
+    response_cvv_not_valid = {"error": "CVV_INVALID", "details": "The cvv is not valid"}
+    response_date_not_valid = {"error": "DATE_INVALID", "details": "The date is not in the future"}
 
     if request.method == 'POST':
 
@@ -449,14 +452,28 @@ def creditcard_create(request):
         if login_result is not True:
             return login_result
 
+        actor_aux = Actor.objects.get(user_account=request.user.id)
+        if actor_aux.credit_card and actor_aux.credit_card.isDelete is True:
+            return JSONResponse(response_creditcard_is_delete, status=400)
+
         try:
             with transaction.atomic():
 
                 data = JSONParser().parse(request)
 
                 data = pruned_serializer_credit_card_create(data)
+
+                if "cvvCode" in data and (data["cvvCode"] < 100 or data["cvvCode"] > 9999):
+                    return JSONResponse(response_cvv_not_valid, status=400)
+                today = datetime.date.today()
+                if "expirationYear" in data and ((data["expirationYear"] < (today.year % 100)) or (
+                        data["expirationYear"] == (today.year % 100) and data[
+                    "expirationMonth"] <= today.month)):
+                    return JSONResponse(response_date_not_valid, status=400)
+
                 serializer = CreditCardSerializer(data=data)
                 if serializer.is_valid():
+
                     # Save in db
                     credit_card = serializer.save()
                     actor = Actor.objects.get(user_account=request.user.id)
@@ -486,6 +503,8 @@ def creditcard_update_get(request, creditcard_id):
     response_creditcard_get = {"error": "NOT_GET_CREDITCARD", "details": "You can not update the credit card"}
     response_data_put = {"error": "DELETE_CREDITCARD", "details": "There was an error to "
                                                                      "delete the creditcard"}
+    response_cvv_not_valid = {"error": "CVV_INVALID", "details": "The cvv is not valid"}
+    response_date_not_valid = {"error": "DATE_INVALID", "details": "The date is not in the future"}
 
     try:
         credit_card = CreditCard.objects.get(pk=creditcard_id)
@@ -495,14 +514,14 @@ def creditcard_update_get(request, creditcard_id):
 
     if request.method == 'GET':
 
-        login_result = login(request, 'advertiser')
+        login_result = login(request, 'advertiserUser')
         login_result2 = login(request, 'admin')
         if login_result is not True and login_result2 is not True:
             return login_result
 
         if login_result is True:
             actor_aux = Actor.objects.get(user_account=request.user.id)
-            if actor_aux.credit_card.id != credit_card.id:
+            if (actor_aux.credit_card and actor_aux.credit_card.id != credit_card.id) or not actor_aux.credit_card:
                 return JSONResponse(response_creditcard_not_see, status=400)
 
         try:
@@ -519,7 +538,7 @@ def creditcard_update_get(request, creditcard_id):
 
     elif request.method == 'PUT':
 
-        login_result = login(request, 'advertiser')
+        login_result = login(request, 'advertiserUser')
         if login_result is not True:
             return login_result
 
@@ -529,9 +548,18 @@ def creditcard_update_get(request, creditcard_id):
             with transaction.atomic():
                 data = JSONParser().parse(request)
 
+                if "cvvCode" in data and (data["cvvCode"] < 100 or data["cvvCode"] > 9999):
+                    return JSONResponse(response_cvv_not_valid, status=400)
+                today = datetime.date.today()
+                if "expirationYear" in data and ((data["expirationYear"] < (today.year % 100)) or (
+                        data["expirationYear"] == (today.year % 100) and data[
+                    "expirationMonth"] <= today.month)):
+                    return JSONResponse(response_date_not_valid, status=400)
+
                 serializer = CreditCardSerializer(credit_card, data=data)
 
                 if serializer.is_valid():
+
                     credit_card = serializer.save()
                     if credit_card.isDelete is True:
                         advertisements = Advertisement.objects.filter(actor=actor.id)
