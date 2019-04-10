@@ -1,15 +1,29 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from records.models import Audio, Advertisement
-from accounts.models import CreditCard
+from accounts.models import Actor, CreditCard
 from sites.models import Site
+
+from managers.payment_manager import charge
 
 import datetime
 
 scheduler = BlockingScheduler()
 
 
-# TODO: Add CRON job for payment
+@scheduler.scheduled_job('cron', id='charge_advertisements_job_id', day='last', hour=0)
+def charge_advertisements_job():
+
+    """
+    CRON job to charge the advertisements.
+    TRIGGER: Last day of each month at 0 AM.
+    """
+
+    advertisers = Actor.objects.filter(credit_card__isnull=False)
+
+    for advertiser in advertisers:
+
+        charge(advertiser.id)
 
 
 @scheduler.scheduled_job('cron', id='delete_marked_advertisements_job_id', day='last', hour=1)
