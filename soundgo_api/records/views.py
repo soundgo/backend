@@ -598,11 +598,9 @@ def advertisement_listen(request, advertisement_id):
 
                 ad.numberReproductions = ad.numberReproductions + 1
 
-                duration = get_record_duration(ad.path)
-
                 configuration = Configuration.objects.all()[0]
 
-                # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
+                # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propios audio
                 login_result = login(request, 'user')
                 login_result2 = login(request, 'advertiser')
 
@@ -619,10 +617,10 @@ def advertisement_listen(request, advertisement_id):
                             serializer = ReproductionSerializer(data=data_reproduction)
                             if serializer.is_valid():
                                 serializer.save()
-                                actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * duration)
+                                actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * ad.duration)
                                 actor.save()
                                 reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
-                                if len(reproductions) >= round((ad.maxPriceToPay*10000)/(int(duration)*ad.radius)):
+                                if len(reproductions) >= round((ad.maxPriceToPay*10000)/(ad.duration*ad.radius)):
                                     ad.isActive = False
                             else:
                                 response_data_save["details"] = serializer.errors
