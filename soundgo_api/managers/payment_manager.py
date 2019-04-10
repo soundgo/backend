@@ -1,4 +1,3 @@
-
 import stripe
 from django.conf import settings
 from datetime import datetime, date
@@ -23,7 +22,7 @@ def charge(actor_id):
             customer = stripe.Customer.create(
                 description=str(Actor.objects.get(pk=actor_id).email),
                 # source='tok_es'
-                source = {
+                source={
                     "object": "card",
                     "name": creditcard.brandName,
                     "brand": creditcard.brandName,
@@ -32,9 +31,9 @@ def charge(actor_id):
                     "cvc_check": creditcard.cvvCode,
                     "exp_month": creditcard.expirationMonth,
                     "exp_year": creditcard.expirationYear,
-                        "number":  4000007240000007, # creditcard.number,
-                        "funding": "credit",
-                        "metadata": {},
+                    "number":  4000007240000007,  # creditcard.number,
+                    "funding": "credit",
+                    "metadata": {},
                     }
                 )
             customer = customer.save()

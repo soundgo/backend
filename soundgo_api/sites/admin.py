@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import Site
+from accounts.models import Actor
 
 
 class SiteAdmin(admin.ModelAdmin):
@@ -9,7 +10,7 @@ class SiteAdmin(admin.ModelAdmin):
 
         if db_field.name == 'actor':
 
-            kwargs['initial'] = request.user.id
+            kwargs['initial'] = Actor.objects.filter(user_account=request.user).all()[0]
             kwargs['disabled'] = True
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
