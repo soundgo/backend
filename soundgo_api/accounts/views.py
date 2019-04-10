@@ -114,7 +114,7 @@ def get_token(request):
 
             if actor.user_account.is_admin:
                 data["role"] = "admin"
-            elif actor.credit_card == None:
+            elif actor.credit_card == None or actor.credit_card.isDelete:
                 data["role"] = "user"
             else:
                 data["role"] = "advertiser"
