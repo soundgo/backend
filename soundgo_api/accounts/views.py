@@ -182,7 +182,7 @@ def actor_get_update_delete(request, nickname):
                 userAccount = UserAccount.objects.filter(nickname=nickname).all()[0]
 
                 # Check if the user pass is correct
-                if data.get('password') == None or not userAccount.check_password(data.get('password')):
+                if (data.get('nickname')!=None or data.get('email')!=None) and (data.get('password') == None or not userAccount.check_password(data.get('password'))):
                     return JSONResponse({"error": "INCORRECT_PASSWORD",
                                          "details": "Your current password is not correct"},
                                         status=400)
