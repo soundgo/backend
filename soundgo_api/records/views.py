@@ -68,12 +68,12 @@ def advertisement_create(request):
                     data = pruned_serializer_advertisement_create(data)
                     configuration = Configuration.objects.all()[0]
 
-                    if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and \
+                    if 'maxPriceToPay' in data and (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and \
                             data["maxPriceToPay"] <= 0:
                         remove_record(data['path'])
                         return JSONResponse(response_price_negative, status=400)
 
-                    if type(data["radius"]) is int and (
+                    if 'radius' in data and type(data["radius"]) is int and (
                             data["radius"] < configuration.minimum_radius or data["radius"] > configuration.maximum_radius):
                         remove_record(data['path'])
                         return JSONResponse(response_radius_negative, status=400)
@@ -162,16 +162,16 @@ def advertisement_update_get(request, advertisement_id):
                     return JSONResponse(response_data_deleted, status=400)
 
                 data = JSONParser().parse(request)
-
                 data = pruned_serializer_advertisement_update(advertisement, data)
-                if (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data["maxPriceToPay"] <= 0:
+                if 'maxPriceToPay' in data and (type(data["maxPriceToPay"]) is float or type(data["maxPriceToPay"]) is int) and data["maxPriceToPay"] <= 0:
                     return JSONResponse(response_price_negative, status=400)
+
                 serializer = AdvertisementSerializer(advertisement, data=data)
                 if serializer.is_valid():
                     ad = serializer.save()
 
                     # Si lo quiere borrar se va a marcar como borrado y se borra de mapbox y del servidor
-                    if data['isDelete']:
+                    if ad.isDelete is True:
                         # Borrar grabacion de servidor
                         result = remove_record(advertisement.path)
                         if not result:
@@ -609,7 +609,7 @@ def advertisement_listen(request, advertisement_id):
                     if (login_result is True) or (login_result2 is True and ad.actor.id != actor.id):
                         today = date.today()
                         reproduction = Reproduction.objects.filter(actor__user_account=request.user.id).filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year, date__day=today.day)
-                        if len(reproduction) == 0:
+                        if len(reproduction) == 0 and ad.isActive is True:
                             data_reproduction = {}
                             data_reproduction['actor'] = actor.id
                             data_reproduction['advertisement'] = ad.id
