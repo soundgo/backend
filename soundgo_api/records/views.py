@@ -600,7 +600,7 @@ def advertisement_listen(request, advertisement_id):
 
                 configuration = Configuration.objects.all()[0]
 
-                # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propio audio
+                # comprobar que se le suma solo a un usuario logueado o a un anunciante que no escucha su propios audio
                 login_result = login(request, 'user')
                 login_result2 = login(request, 'advertiser')
 
