@@ -296,11 +296,9 @@ def actor_get_update_delete(request, nickname):
 
             photo = actor.photo
 
-            if photo or photo != "":
-                removePhoto = remove_photo(photo)
 
-                if removePhoto == False:
-                    raise Exception("There was a problem when trying to remove photo")
+            remove_photo(photo)
+
 
             actor.delete()
 
