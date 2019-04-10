@@ -1,3 +1,7 @@
+import django
+
+django.setup()
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from records.models import Audio, Advertisement
