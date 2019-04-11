@@ -12,8 +12,8 @@ class AccountsTest(TestCase):
 
 
     def get_host(self):
-        return "http://127.0.0.1:8000"
-        #return "https://soundgo-api-v2.herokuapp.com"
+        #return "http://127.0.0.1:8000"
+        return "https://soundgo-api-v2.herokuapp.com"
 
     """
     Test for the Cloudinary functions used in the Accounts module.
