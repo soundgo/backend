@@ -27,6 +27,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
     actions = []
 
+    readonly_fields = ('maxTimeRecord', )
+
     def has_add_permission(self, request):
         return False
 
@@ -37,8 +39,3 @@ class CategoryAdmin(admin.ModelAdmin):
 admin.site.register(Audio, AudioAdmin)
 admin.site.register(Advertisement, AdvertisementAdmin)
 admin.site.register(Category, CategoryAdmin)
-# TODO: DELETE AFTER TESTS
-admin.site.register(Like)
-admin.site.register(Report)
-admin.site.register(Reproduction)
-
