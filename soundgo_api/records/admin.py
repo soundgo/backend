@@ -27,6 +27,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
     actions = []
 
+    readonly_fields = ('maxTimeRecord', )
+
     def has_add_permission(self, request):
         return False
 
