@@ -277,10 +277,14 @@ def actor_get_update_delete(request, nickname):
 
         try:
 
-            isDeleteable = is_deleteable(actor)
+            login_result3 = login(request, 'advertiser')
 
-            if isDeleteable == False:
-                raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
+            if login_result3 is True:
+
+                isDeleteable = is_deleteable(actor)
+
+                if isDeleteable == False:
+                    raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
                                 "advertisements")
 
             ua = actor.user_account
