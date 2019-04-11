@@ -18,7 +18,7 @@ class ActorInline(admin.TabularInline):
     verbose_name_plural = "ACTOR"
     min_num = 1
 
-    fields = ("photo", "email", "minutes", "credit_card")
+    fields = ("photo", "email", "minutes")
 
 
 class UserAccountAdmin(BaseUserAccountAdmin):
@@ -59,5 +59,4 @@ class UserAccountAdmin(BaseUserAccountAdmin):
 
 
 admin.site.register(UserAccount, UserAccountAdmin)
-admin.site.register(CreditCard)
 admin.site.unregister(Group)
