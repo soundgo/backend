@@ -47,7 +47,7 @@ class SitesTest(TestCase):
     #Auxiliary methods
     def create_site(self, object, code):
 
-        token = self.get_token("soundgoadvertiser", "soundgoadvertiser")
+        token = self.get_token("carlos", "Carlos123.")
 
         headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
         body = json.dumps(object)
@@ -62,7 +62,7 @@ class SitesTest(TestCase):
 
     def update_site(self, object, code, id):
 
-        token = self.get_token("soundgoadvertiser", "soundgoadvertiser")
+        token = self.get_token("carlos", "Carlos123.")
 
         headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
         body = json.dumps(object)
@@ -77,7 +77,7 @@ class SitesTest(TestCase):
 
     def delete_site(self, code, id):
 
-        token = self.get_token("soundgoadvertiser", "soundgoadvertiser")
+        token = self.get_token("carlos", "Carlos123.")
 
         headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
 
