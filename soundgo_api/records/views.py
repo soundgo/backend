@@ -583,7 +583,7 @@ def advertisement_listen(request, advertisement_id):
     response_advertisement_not_found = {"error": "ADVERTISEMENT_NOT_FOUND", "details": "The advertisement does not exit"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_data_save = {"error": "LISTEN_ADVERTISEMENT", "details": "There was an error to listen advertisement"}
-    response_listen = {"listened": "True"}
+    response_listen = {"listened": True}
 
     if request.method == "PUT":
 
@@ -618,7 +618,7 @@ def advertisement_listen(request, advertisement_id):
                             serializer = ReproductionSerializer(data=data_reproduction)
                             if serializer.is_valid():
                                 serializer.save()
-                                response_listen["listened"] = "False"
+                                response_listen["listened"] = False
                                 actor.minutes = actor.minutes + int(configuration.time_listen_advertisement * ad.duration)
                                 actor.save()
                                 reproductions = Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month, date__year=today.year)
