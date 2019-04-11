@@ -494,7 +494,7 @@ class CloudinaryTest(TestCase):
         self.assertTrue(res)
 
 
-class AdvertisementsTest(TestCase):
+class RecordsTest(TestCase):
 
     def get_host(self):
         #return "http://127.0.0.1:8000"
@@ -523,6 +523,203 @@ class AdvertisementsTest(TestCase):
 
         # Update listen advertisement
         self.update_listen_advertisement(204, advertisement['id'])
+
+    # Test cases
+    def test_crud_audio(self):
+        # Create site
+        base64Value = CloudinaryTest.get_record(self)
+        audio = self.create_audio(
+            {"latitude": 123, "longitude": 221,
+             "base64": base64Value, "category": "Leisure"}, 201)
+
+        # Update site
+        self.update_audio({"category": "Experience", "tags": []}, 200, audio['id'])
+
+        # Get site
+        self.get_audio(200, audio['id'])
+
+        # Delete site
+        self.delete_audio(204, audio['id'])
+
+        # Site deleted can not get again
+        self.get_audio(404, audio['id'])
+
+        # Site deleted can not delete again
+        self.delete_audio(404, audio['id'])
+
+        # Site deleted can not update again
+        self.update_audio(
+            {"category": "Experience"},
+            404, audio['id'])
+
+        # Create site
+        site = self.create_site(
+            {"name": "Escuela informática", "description": "Aprende informática en tu lugar  favorito",
+             "longitude": 35.23, "latitude": -5.34}, 201)
+
+        # Create audio in a site
+        audio_site = self.create_audio(
+            {"latitude": 123, "longitude": 221,
+             "base64": base64Value, "category": "Leisure"}, 201, site['id'])
+
+        # Delete audio in a site
+        self.delete_audio(204, audio_site['id'])
+
+        # Delete site
+        self.delete_site(204, site['id'])
+
+    #########
+
+    def test_audios_site(self):
+        # Create site
+        site = self.create_site(
+            {"name": "Escuela informática", "description": "Aprende informática en tu lugar  favorito",
+             "longitude": 35.23, "latitude": -5.34}, 201)
+
+        # Get site
+        self.get_audio_sites(200, site['id'])
+
+        # Delete audio in a site
+        self.delete_site(204, site['id'])
+
+        # Get audios to a deleted site
+        self.get_audio_sites(404, site['id'])
+
+    #########
+
+    # Test cases
+    def test_like_report_listen_audio(self):
+        # Create site
+        base64Value = CloudinaryTest.get_record(self)
+        audio = self.create_audio(
+            {"latitude": 123, "longitude": 221,
+             "base64": base64Value, "category": "Leisure"}, 201)
+
+        # Create like
+        self.create_like(201, audio['id'])
+
+        # Create report
+        self.create_report(201, audio['id'])
+
+        # Listen
+        self.audio_listen(204, audio['id'])
+
+        # Delete audio in a site
+        self.delete_audio(204, audio['id'])
+
+        # Create like in audio deleted
+        self.create_like(400, audio['id'])
+
+        # Create report in audio deleted
+        self.create_report(400, audio['id'])
+
+        # Listen in audio deleted
+        self.audio_listen(404, audio['id'])
+
+    #########
+
+    # Auxiliary methods
+    def create_site(self, object, code):
+
+        token = self.get_token("carlos", "Carlos123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        body = json.dumps(object)
+
+        r = requests.post(self.get_host() + '/sites/site/', data=body, headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+        return r.json()
+
+    def create_audio(self, object, code, site_id=None):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        body = json.dumps(object)
+        if site_id == None:
+            r = requests.post(self.get_host() + '/records/audio/', data=body, headers=headers)
+        else:
+            r = requests.post(self.get_host() + '/records/audio/site/' + str(site_id) + "/", data=body,
+                              headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+        return r.json()
+
+    def update_audio(self, object, code, id):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        body = json.dumps(object)
+
+        r = requests.put(self.get_host() + '/records/audio/' + str(id) + "/", data=body, headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+        return r.json()
+
+    def delete_audio(self, code, id):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+
+        r = requests.delete(self.get_host() + '/records/audio/' + str(id) + "/", headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    def get_audio(self, code, id):
+        headers = {'content-type': 'application/json'}
+
+        r = requests.get(self.get_host() + '/records/audio/' + str(id) + "/", headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    def get_audio_sites(self, code, id):
+        headers = {'content-type': 'application/json'}
+
+        r = requests.get(self.get_host() + '/records/audio/site/categories/' + str(id) + "/?categories=Leisure",
+                         headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    def delete_site(self, code, id):
+
+        token = self.get_token("carlos", "Carlos123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+
+        r = requests.delete(self.get_host() + '/sites/site/' + str(id) + "/", headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    # Auxiliary methods
+    def create_like(self, code, id):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+
+        r = requests.post(self.get_host() + '/records/audio/like/' + str(id) + '/', headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    def create_report(self, code, id):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+
+        r = requests.post(self.get_host() + '/records/audio/report/' + str(id) + '/', headers=headers)
+
+        self.assertTrue(r.status_code == code)
+
+    def audio_listen(self, code, id):
+        token = self.get_token("manuel", "Manuel123.")
+
+        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+
+        r = requests.put(self.get_host() + '/records/audio/listen/' + str(id) + "/", headers=headers)
+
+        self.assertTrue(r.status_code == code)
 
     # Auxiliary methods
     def create_advertisement(self, object, code):
