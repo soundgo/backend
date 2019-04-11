@@ -455,13 +455,13 @@ def audio_site_create(request, site_id):
                 data['actor'] = actor.id
                 # Fin user de prueba
                 try:
-                    data = pruned_serializer_audio_create_site(data, site_id)
                     # Metemos en el audio el site
                     data['site'] = site_id
-                    serializer = AudioSerializer(data=data)
-
                     # Coger el base 64 y guardar , meter en data['path'] la url que retorne
                     data['path'] = upload_record(data['base64'])
+                    data = pruned_serializer_audio_create_site(data, site_id)
+                    serializer = AudioSerializer(data=data)
+
                 except Exception:
                     if 'path' in data:
                         remove_record(data['path'])
