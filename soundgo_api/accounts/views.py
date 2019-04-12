@@ -277,11 +277,24 @@ def actor_get_update_delete(request, nickname):
 
         try:
 
-            isDeleteable = is_deleteable(actor)
+            login_result3 = login(request, 'advertiser')
 
-            if isDeleteable == False:
-                raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
+            if login_result3 is True:
+
+                card = actor.credit_card
+
+                if card:
+                    card.delete()
+
+                isDeleteable = is_deleteable(actor)
+
+                if isDeleteable == False:
+                    raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
                                 "advertisements")
+
+
+            photo = actor.photo
+            remove_photo(photo)
 
             ua = actor.user_account
 
@@ -291,8 +304,7 @@ def actor_get_update_delete(request, nickname):
                 response_actor_delete["details"] = str(e)
                 return JSONResponse(response_actor_delete, status=400)
 
-            photo = actor.photo
-            remove_photo(photo)
+
 
 
             actor.delete()
