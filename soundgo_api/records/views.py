@@ -634,7 +634,7 @@ def advertisement_listen(request, advertisement_id):
                 # Update in Firebase
                 update_advertisement(ad)
 
-                return JSONResponse(response_listen, status=204)
+                return JSONResponse(response_listen, status=200)
 
         except Exception or ValueError or KeyError as e:
             response_data_save["details"] = str(e)
