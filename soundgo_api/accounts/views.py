@@ -328,7 +328,12 @@ def deleteable(request, nickname):
 
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_actor_not_found = {"error": "ACTOR_NOT_FOUND", "details": "The actor does not exit"}
-    response_actor_belong = {"error": "DELETE_ACTOR", "details": "NOt possible to delete the account of another user"}
+    response_actor_belong = {"error": "DELETE_ACTOR", "details": "Not possible to delete the account of another user"}
+    response_actor_deleteable = {"message": "DELETEABLE_ACTOR",
+                                   "details": "The advertiser can be deleted"}
+    response_actor_undeleteable = {"error": "UNDELETEABLE_ACTOR",
+                                   "details": "The advertiser cannot be deleetd beacuse he/she"
+                                              " has pending expenses and active advertisements"}
 
     try:
 
@@ -350,8 +355,10 @@ def deleteable(request, nickname):
         isDeleteable = is_deleteable(actor)
 
         if isDeleteable == False:
-            raise Exception("The advertiser cannot be deleetd beacuse he/she has pending expenses and active "
-                            "advertisements")
+            return JSONResponse(response_actor_undeleteable, status=404)
+        else:
+            return JSONResponse(response_actor_deleteable, status=204)
+
 
     else:
         return JSONResponse(response_data_not_method, status=400)
