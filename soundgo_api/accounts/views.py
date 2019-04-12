@@ -564,7 +564,7 @@ def creditcard_update_get(request, creditcard_id):
                 today = datetime.date.today()
                 if "expirationYear" in data and ((data["expirationYear"] < (today.year % 100)) or (
                         data["expirationYear"] == (today.year % 100) and data[
-                    "expirationMonth"] <= today.month)):
+                    "expirationMonth"] < today.month)):
                     return JSONResponse(response_date_not_valid, status=400)
 
                 serializer = CreditCardSerializer(credit_card, data=data)
