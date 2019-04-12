@@ -522,7 +522,7 @@ class RecordsTest(TestCase):
         self.get_advertisement(200, advertisement['id'])
 
         # Update listen advertisement
-        self.update_listen_advertisement(204, advertisement['id'])
+        self.update_listen_advertisement(200, advertisement['id'])
 
     # Test cases
     def test_crud_audio(self):
