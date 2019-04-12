@@ -211,7 +211,7 @@ class AccountsTest(TestCase):
 
         r = requests.post(self.get_host() + '/accounts/actor/', data=body, headers=headers)
 
-
+        print(r.json())
         self.assertTrue(r.status_code == code)
 
         return r.json()
