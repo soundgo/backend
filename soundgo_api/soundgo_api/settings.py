@@ -26,10 +26,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'tbbzhevbkg=pa(t70skzn9l2tgo66q*21037qjbay*w!73xj*d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# TODO: SET FALSE FOR PRODUCTION
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+# STRIPE KEY
+STRIPE_SECRET_KEY = "sk_test_jHCu4kaMU3l92v1QJDomxIxU00LdmYWj1I"
+STRIPE_PUPLISHABLE_KEY = "pk_test_OOPR6p1XfFzsuMTitnjpFvKH00orufiBbH"
 
 # Application definition
 

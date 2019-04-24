@@ -1,10 +1,11 @@
 from cloudinary import config, uploader, api
+
 import os
 
 config(
-    cloud_name="soundgo",
-    api_key="228652582852825",
-    api_secret="2rRo1h7nIeHkbvfKUqR8j0ApZwE"
+    cloud_name="soundgo2",
+    api_key="868693577684328",
+    api_secret="yMoOjelWJCCNS_4AkyVDAIM6mLw"
 )
 
 
@@ -16,8 +17,11 @@ def upload_photo(base64):
     :return: secure URL where the photo is uploaded
     """
 
-    res = uploader.upload(base64, folder="photos/")
-    return res["secure_url"]
+    try:
+        res = uploader.upload(base64, folder="photos/")
+        return res["secure_url"]
+    except Exception:
+        return ""
 
 
 def remove_photo(url):
@@ -28,12 +32,15 @@ def remove_photo(url):
     :return: True if it is deleted correctly or False in another case
     """
 
-    public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
-    res = uploader.destroy(public_id)
+    try:
+        public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
+        res = uploader.destroy(public_id)
 
-    if res["result"] == "ok":
-        return True
-    else:
+        if res["result"] == "ok":
+            return True
+        else:
+            return False
+    except Exception:
         return False
 
 
@@ -45,8 +52,11 @@ def upload_record(base64):
     :return: secure URL where the record is uploaded
     """
 
-    res = uploader.upload_large(base64, resource_type="video", folder="records/")
-    return res["secure_url"]
+    try:
+        res = uploader.upload_large(base64, resource_type="video", folder="records/")
+        return res["secure_url"]
+    except Exception:
+        return ""
 
 
 def remove_record(url):
@@ -57,12 +67,15 @@ def remove_record(url):
     :return: True if it is deleted correctly or False in another case
     """
 
-    public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
-    res = uploader.destroy(public_id, resource_type="video")
+    try:
+        public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
+        res = uploader.destroy(public_id, resource_type="video")
 
-    if res["result"] == "ok":
-        return True
-    else:
+        if res["result"] == "ok":
+            return True
+        else:
+            return False
+    except Exception:
         return False
 
 
@@ -74,7 +87,10 @@ def get_record_duration(url):
     :return: the duration of the record
     """
 
-    public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
-    res = api.resource(public_id, resource_type="video", image_metadata=True)
+    try:
+        public_id = "/".join(os.path.splitext(url)[0].split("/")[-2:])
+        res = api.resource(public_id, resource_type="video", image_metadata=True)
 
-    return int(res["duration"])
+        return int(res["duration"])
+    except Exception:
+        return 0

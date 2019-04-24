@@ -6,8 +6,7 @@ from .models import Site
 from accounts.models import Actor
 from .serializers import SiteSerializer
 from django.db import transaction
-from managers.firebase_manager import add_site, remove_site
-from copy import deepcopy
+from accounts.views import login
 
 
 class JSONResponse(HttpResponse):
@@ -27,28 +26,43 @@ def site_create(request):
 
     response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the site"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD",
+                                      "details": "Logged user does not have a credit card"}
 
     if request.method == 'POST':
 
         try:
+            with transaction.atomic():
 
-            data = JSONParser().parse(request)
+                data = JSONParser().parse(request)
 
-            # TODO user de prueba, para que se cree tiene que ser un usuario con tarjeta o ser administrador
-            actor = Actor.objects.all()[0]
-            data['actor'] = actor.id
-            # Fin user de prueba
+                # comprobar que tiene que ser un anunciante con tarjeta o ser administrador
 
-            serializer = SiteSerializer(data=data)
-            if serializer.is_valid():
-                # Save in db
-                site = serializer.save()
-                # Save in Firebase Cloud Firestore
-                add_site(site)
-                return JSONResponse(serializer.data, status=201)
-            return JSONResponse(response_data_save, status=400)
+                login_result = login(request, 'advertiser')
+                login_result2 = login(request, 'admin')
 
-        except Exception or ValueError or KeyError:
+                if login_result is not True and login_result2 is not True:
+                    return login_result
+
+                if login_result is True:
+                    actor_aux = Actor.objects.get(user_account=request.user.id)
+                    if actor_aux.credit_card is None:
+                        return JSONResponse(response_actor_not_credit_card, status=400)
+
+                actor = Actor.objects.get(user_account=request.user.id)
+                data['actor'] = actor.id
+                # Fin user de prueba
+
+                serializer = SiteSerializer(data=data)
+                if serializer.is_valid():
+                    # Save in db
+                    serializer.save()
+                    return JSONResponse(serializer.data, status=201)
+                response_data_save["details"] = serializer.errors
+                return JSONResponse(response_data_save, status=400)
+
+        except Exception or ValueError or KeyError as e:
+            response_data_save["details"] = str(e)
             return JSONResponse(response_data_save, status=400)
 
     else:
@@ -71,6 +85,8 @@ def site_update_delete_get(request, site_id):
 
     response_data_delete = {"error": "DELETE_SITE", "details": "There was an error to delete the site"}
 
+    response_site_not_belong = {"error": "SITE_NOT_BELONG", "details": "The site does not belong to the logged user"}
+
     try:
         site = Site.objects.get(pk=site_id)
     except Site.DoesNotExist:
@@ -82,44 +98,66 @@ def site_update_delete_get(request, site_id):
 
             serializer = SiteSerializer(site)
 
-        except Exception or ValueError or KeyError:
+        except Exception or ValueError or KeyError as e:
+            response_data_get["details"] = str(e)
             return JSONResponse(response_data_get, status=400)
 
         data_aux = serializer.data
         data_aux.pop("actor")
         data_aux["name_actor"] = site.actor.user_account.nickname
         data_aux["photo"] = site.actor.photo
-        return JSONResponse(data_aux)
+        return JSONResponse(data_aux, status=200)
 
-    # Todo solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
+    # Comprobar que solo lo puede actualizar y borrar el advertiser del anuncio y el administrador
 
     elif request.method == 'PUT':
 
+        login_result = login(request, 'advertiser')
+        login_result2 = login(request, 'admin')
+
+        if login_result is not True and login_result2 is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if site.actor.id != actor_aux.id:
+                return JSONResponse(response_site_not_belong, status=400)
+
         try:
+            with transaction.atomic():
+                data = JSONParser().parse(request)
+                data = pruned_serializer_site_update(site, data)
+                serializer = SiteSerializer(site, data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return JSONResponse(serializer.data)
+                response_data_put["details"] = serializer.errors
+                return JSONResponse(response_data_put, status=400)
 
-            data = JSONParser().parse(request)
-            data = pruned_serializer_site_update(site, data)
-            serializer = SiteSerializer(site, data=data)
-            if serializer.is_valid():
-                serializer.save()
-                return JSONResponse(serializer.data)
-
-        except Exception or ValueError or KeyError:
+        except Exception or ValueError or KeyError as e:
+            response_data_put["details"] = str(e)
             return JSONResponse(response_data_put, status=400)
-
-        return JSONResponse(response_data_put, status=400)
 
     elif request.method == 'DELETE':
 
+        login_result = login(request, 'advertiser')
+        login_result2 = login(request, 'admin')
+
+        if login_result is not True and login_result2 is not True:
+            return login_result
+
+        if login_result is True:
+            actor_aux = Actor.objects.get(user_account=request.user.id)
+            if site.actor.id != actor_aux.id:
+                return JSONResponse(response_site_not_belong, status=400)
+
         try:
+            with transaction.atomic():
+                # Remove site from db
+                site.delete()
 
-            # Remove site from Firebase Cloud Firestore
-            site_copy = deepcopy(site)
-            # Remove site from db
-            site.delete()
-            remove_site(site_copy)
-
-        except Exception or KeyError or ValueError:
+        except Exception or KeyError or ValueError as e:
+            response_data_delete["details"] = str(e)
             return JSONResponse(response_data_delete, status=400)
 
         return HttpResponse(status=204)
