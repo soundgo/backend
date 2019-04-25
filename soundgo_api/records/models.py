@@ -41,6 +41,7 @@ class Audio(Record):
 
 
 class Advertisement(Record):
+    description = models.CharField(max_length=500, default="")
     maxPriceToPay = models.FloatField()
     radius = models.IntegerField()
     isActive = models.BooleanField(default=True)
