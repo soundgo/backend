@@ -498,7 +498,7 @@ class RecordsTest(TestCase):
 
     def get_host(self):
         #return "http://127.0.0.1:8000"
-        return "https://soundgo-api-v3.herokuapp.com"
+        return "https://soundgo-api.herokuapp.com"
 
     # Test cases
     def test_crud_advertisement(self):

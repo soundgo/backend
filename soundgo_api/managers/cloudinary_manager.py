@@ -3,9 +3,9 @@ from cloudinary import config, uploader, api
 import os
 
 config(
-    cloud_name="soundgov3",
-    api_key="663526249153657",
-    api_secret="cFo5Ha_qkwHANrm57aeRgVwRtuo"
+    cloud_name="soundgoresources",
+    api_key="712991535941755",
+    api_secret="FRZrudr46rbX-T8gobAR7LKa1HA"
 )
 
 

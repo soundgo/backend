@@ -5,42 +5,42 @@ from firebase_admin import firestore
 
 cred = credentials.Certificate({
   "type": "service_account",
-  "project_id": "soundgo-94882",
-  "private_key_id": "12956938c57fe1fcd527e3baf6751fafaa594241",
+  "project_id": "soundgo-a0f55",
+  "private_key_id": "9bcefd4dc0e2dd6c95eceba3ac48b9b1ebd14b25",
   "private_key": "-----BEGIN PRIVATE KEY-----\n"
-                 "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDuhJm+h9/R3fi6\n"
-                 "5YyNGucZKIeX6GUC2kpA10ApO8F1Mr+nMFCzH/hU6zMgOyKoBwymqpqqWEB7HfRR\n"
-                 "0HbMTVeE8wIodC+mRHfQdk9w9U+OgMSBm/P7WXeWz6nlKwNTSLMIXXhHduBq9FT9\n"
-                 "fyoLIDtHwDYLEWBZ0ME0hiSVqKehSv6TGenr9haia6l+fWbz+mA1WP8D7AcvY1m4\n"
-                 "buhErufl9aMMwB2yk6S4/geFxKIaa7pdvYe0tha4eIUO9yieLwMFcPXd1hMD5mdh\n"
-                 "6h7u0t1FkhlAGnn48clBFKJ5TSIaDUH5yO9q9ptKZXJ1aWNMdNmg2r6zdL2gUdqM\n"
-                 "rECSHjwnAgMBAAECggEAXBa4IVbmdGnGOaqc7HHhndYHHABu134eQxCYRhM7Kxuv\n"
-                 "4UYHMlF6mJbCg4QxajxmhwbBdllic+ZpyRi6dUC7NKp6P9Iz/3bZ55N2Mn+T+sn+\n"
-                 "lKf4uCefw4tj5gYIX6Rm8yjbYoQkO0cgdUsemXMVUCuG8hkAYUz2+2d7Qoj+R4gl\n"
-                 "Cxz7aUBX5vxgDJKnJqXnTnNTaR3rdLRdNHq0Mo22n0p7z09ZLGky9GmKit/4uoTH\n"
-                 "H4Z5RqScR5GW4MG89v7oMFj0DMwfOmhE133+HOYtL8W8u/QBzwWoO+PtrGaZX0qG\n"
-                 "4+fJxiKw782vQyz62hYAGWTsirB8IaZqm3NNoFeVIQKBgQD88fRhSy00jlGl3Dkp\n"
-                 "5Dca0LigSfPzuKZM/rJx6cIkoC+9P/HNqepAcU2+opMmH2w5UEQyERFGIrkuh2O2\n"
-                 "oHCITBmcxmDg/yXOHGKPViP3RdzGjcNMiTd2h/nTfkKYCpm5PzcqyKy+Sqoa+Y9O\n"
-                 "UVEOOZ7cHLgTTLpv0Eus34zg0QKBgQDxZgpnWYKgYhA1yUWlyyqZrWeKyHvwrIjN\n"
-                 "8uPiBY4p3NrRwnRIh3gYnbjGDjJzD+U7n8Z7RlKAJmWaO0jiDc/O/8l8/ZiV8Uql\n"
-                 "1v0eZOjewV2kBfQCZZXjS3s2F/bISIjZfc7E3g6qb/pSXaYox7HHqnvgz+PH6yJW\n"
-                 "BuSEUpzLdwKBgAfP0SRQFg1Rd+QPcRSCH9GMMKeCoS4dvcUS+J/cAErxR4gouWcI\n"
-                 "oFttJGGG09SRk94RRInnTQlFeUKem83AFrme4AufdM5+EsTSy5hxqJqyZaccKbPr\n"
-                 "aPMYL/cAJz5a1XSLJ0EDAZK+65H5sxtQF5jA3s8dc/HkpL1fSXcFUGyBAoGBAO5e\n"
-                 "78kMR4QuMYmbPY4w59kmtUcDH/gRt2l+/m4zRCWsc9uL5B22v+222T2hyUl7mcXd\n"
-                 "yTXzxAXNZKj+/8JRFzJ1vLYTCTiPM0I94GbCCH3mfZw5ULGJNJBk+b75vPQbRB9Y\n"
-                 "LvSRvfOpbYsl9KzyPGhIvdjKEEhatOY0GjVcCn6TAoGAQRHLYfBzlJ7ve1mTLS9e\n"
-                 "QekVbS1JG8m9srZSOAKLFyETxz4CI0KptSb+Qh9d4KBjQiR1PFyrESnMOyazcjen\n"
-                 "xi/NJqe2k5bio6Igzr09K5LLKopp/K90dBvL8cCkGdVYkTNDLTZtQIPH0691GCBW\n"
-                 "pKocm5QWtNYQmtWT22YFDwQ=\n"
+                 "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDbxjKmEmaZwvgF\n"
+                 "Kv7XfSbw9zj0V2TRLS4xcCuGZ3aaD/oUKQzIGfS20roqKFDfGGk5TvJaXA+qAvco\n"
+                 "HQ20gzbWW2jvIk4QxpYKtuExMBXJ1dUwnY4b+6715WQBJIGls4QrmG91/4Lck3Gq\n"
+                 "qexpMjb7bvFEST8tBxvzOWigSGH6QjyaaZcbdDYlWzkgfNcQGvLuPzzePZoS/f+L\n"
+                 "QSF/pKZQVkg/CZJLctikJuCzXXL1aseOUZ+Hr7BKDPSsZzEfBb7b/A5XPEDHoH2s\n"
+                 "X+tU/HTi3JRUv5ujFiyI3d1UpJ6KR9HZFpTXM+CNncZ6KNViD2r24tQTpSPthxMR\n"
+                 "F/HUflQ5AgMBAAECggEAArdMFHEpRfCwI9DgdeAffVOyJz42P38ysTHiQ9FfA0U7\n"
+                 "xrMsK9k675B39FdBCpobYMsuOQ98B71CJIOEEhfws0z4EBkpLvwOn3gbnSyWNFiZ\n"
+                 "aiCkVd8HeOqlEKjiFkll59ZaLZ04VuABRAXrZ0W+LV91Xq3rYzPRigZgBI0THZEy\n"
+                 "nFF4zmlyY3YAXVIMStro1AAZnBA4XlVhWBVc0cdzxHotP1DPaITVxwXqw9nKUqsi\n"
+                 "cO05l+z+g4yhV6ipuGzlAqFtipgabC4s344d1WhBwu3J56RDv6ngVWJ/Hv/5pIqN\n"
+                 "MurSu1RChF0XjJ4lslAVDeNVN08UNLL+2xLsVy1XFQKBgQD+1URaal+CFXmeEkuv\n"
+                 "Dp+He+h1Emvq8zI/BysncMd1H62C55rNXO/9HjNO3osMeTfO3O+4Hjyn+4uFnlQr\n"
+                 "OiyF9cIcOu0iaH+8cs3VjokPSAYEGo+Dqpmij1kNOAtWgLnB5ynyqpal0b9aXSG0\n"
+                 "Yc8YMXnAgLj5VHcSe3eS1v1JBQKBgQDcx9UY5+TND8jLtZXELk1K+KuPnRe+fWjD\n"
+                 "IpaZoneplj6aCmwXPvuB08Bg8Dl3l8prR5L+4tLMSj7hTmUwlvodeKT9j8PTm4w0\n"
+                 "p1VTvv6GZG4Lpyf9O1MbV6+WZst+SvmjfHC1aDmAZBGntSIAe8cK5fMr3g6JH7PS\n"
+                 "GTZ1Pgh0pQKBgEsIvsykn6Ss8Bd0KabM9notKOA34WDX5Qab9L/zPDencS6nRXSM\n"
+                 "lfmAx/jEHEs68gzODyO2e4O21HkuingD9BIpr9MiIqrL/Dif0S29f2vpeCQDMhjB\n"
+                 "xeUQslbrFqOM2aVXjIlwY1VF8kMIQyFa32CvSLs+67g2f60If8fT19aFAoGAMY7t\n"
+                 "x6xuEJXFdeyp1KKsGPMe15rktI7EEGFYOt5cTAX8wWkrgEBUBn14xonF7JF3D4O+\n"
+                 "fFaACPl1ie+mCTUqqajmKEC4LWzSGROitKy/x30NsrHv6QkDC7UwJeunLA86YDdT\n"
+                 "uXTOy4Iq8GFZY5BlSo35etRaoO8r1zJvpfupvD0CgYB6Y15p14VXXoiVrVq1fuio\n"
+                 "9l7G1LM6HxLU8r3f+gJQWWlMOczLMUn5D+dPraIuLEpXscKs1Jp5K06Yia6aWizN\n"
+                 "iyblnnfTWWHdtKLWirbJLCu+ZGoaJyH615dsJJhY30JZ+Abkx0GwRBPVhVPZM1Bp\n"
+                 "dY9g+lonYDo3DH5XSYbm+g==\n"
                  "-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-ew2jf@soundgo-94882.iam.gserviceaccount.com",
-  "client_id": "111393030509917214219",
+  "client_email": "firebase-adminsdk-8rpty@soundgo-a0f55.iam.gserviceaccount.com",
+  "client_id": "106483786662850673080",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-ew2jf%40soundgo-94882."
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-8rpty%40soundgo-a0f55."
                           "iam.gserviceaccount.com"
 })
 
