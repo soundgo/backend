@@ -1,0 +1,24 @@
+html, body{
+	margin:0;
+	padding: 0;
+	height: 100%;
+	width: 100%;
+}
+
+.container-father{
+	height: 100%;
+	width: 100%;
+	margin: auto;
+	background: url('../imgs/map.png') no-repeat 50% 50%;
+	background-size: cover;
+	display:table;
+	top: 0;
+
+}
+
+.container-father .container-fill{
+	display: table-cell;
+	vertical-align: middle;
+	text-align:center;
+	padding-bottom: 25%;
+}

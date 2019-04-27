@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path('creditcard/', views.creditcard_create),
     path('creditcard/<int:creditcard_id>/', views.creditcard_update_get),
     path('actor/deleteable/<str:nickname>/', views.deleteable),
+    re_path(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',  views.activate, name='activate'),
 ]
