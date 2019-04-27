@@ -28,7 +28,7 @@ class UserAccountManager(BaseUserManager):
             nickname,
             password=password,
             is_admin=True,
-            is_active = True
+            is_active=True
         )
 
         return user_account
