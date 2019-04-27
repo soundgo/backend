@@ -39,7 +39,7 @@ echo -e "Database populated"
 echo -e "\n<<<< Creating user >>>>\n"
 
 python3 manage.py shell -c "from accounts.models import UserAccount; UserAccount.objects.all().delete();"
-python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgouser', 'soundgouser'); actor = Actor.objects.create(user_account=user_account, email='soundgouser@email.com', photo='https://res.cloudinary.com/soundgov3/image/upload/v1556306590/photos/manuel_hsjzbx.jpg'); actor.save();"
+python3 manage.py shell -c "from accounts.models import Actor; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgouser', 'soundgouser', is_active=True); actor = Actor.objects.create(user_account=user_account, email='soundgouser@email.com', photo='https://res.cloudinary.com/soundgov3/image/upload/v1556306590/photos/manuel_hsjzbx.jpg'); actor.save();"
 
 echo -e "User created with the following credentials: ['soundgouser', 'soundgouser']"
 
@@ -48,7 +48,7 @@ echo -e "User created with the following credentials: ['soundgouser', 'soundgous
 echo -e "\n<<<< Creating advertiser >>>>\n"
 
 python3 manage.py shell -c "from accounts.models import CreditCard; CreditCard.objects.all().delete();"
-python3 manage.py shell -c "from accounts.models import Actor, CreditCard; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgoadvertiser', 'soundgoadvertiser'); credit_card = CreditCard.objects.create(holderName = 'Carlos Mallado', brandName= 'MASTERCARD', number= '5364212315362996', expirationMonth = 7, expirationYear = 21, cvvCode= 841, isDelete= False) ;actor = Actor.objects.create(user_account=user_account, email='soundgoadvertiser@email.com', photo='https://res.cloudinary.com/soundgov3/image/upload/v1556306591/photos/carlos_ebw2lm.jpg', credit_card = credit_card); actor.save();"
+python3 manage.py shell -c "from accounts.models import Actor, CreditCard; from django.contrib.auth import get_user_model; UserAccount = get_user_model(); user_account = UserAccount.objects.create_user_account('soundgoadvertiser', 'soundgoadvertiser', is_active=True); credit_card = CreditCard.objects.create(holderName = 'Carlos Mallado', brandName= 'MASTERCARD', number= '5364212315362996', expirationMonth = 7, expirationYear = 21, cvvCode= 841, isDelete= False) ;actor = Actor.objects.create(user_account=user_account, email='soundgoadvertiser@email.com', photo='https://res.cloudinary.com/soundgov3/image/upload/v1556306591/photos/carlos_ebw2lm.jpg', credit_card = credit_card); actor.save();"
 
 
 echo -e "Advertiser created with the following credentials: ['soundgoadvertiser', 'soundgoadvertiser']"
