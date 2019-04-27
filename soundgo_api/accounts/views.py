@@ -20,6 +20,14 @@ from managers.firebase_manager import remove_advertisement
 from records.models import Reproduction
 import datetime
 
+from django.utils.encoding import force_bytes, force_text
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from .tokens import account_activation_token
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.contrib.auth.models import BaseUserManager
+
 
 class JSONResponse(HttpResponse):
     """
@@ -213,18 +221,6 @@ def actor_get_update_delete(request, nickname):
                                              "details": "You must write a nickname"},
                                             status=400)
 
-                # Check email
-                if data.get('email') != None:
-                    if len(Actor.objects.filter(email=data.get('email')).all()) != 0 and actor.email != data.get(
-                            'email'):
-
-                        return JSONResponse({"error": "EMAIL_USED",
-                                             "details": "This email is been using by another actor."},
-                                            status=400)
-                    else:
-
-                        actor.email= data.get('email')
-
 
 
                 # check photo
@@ -409,7 +405,7 @@ def actor_create(request):
                     data_actor['photo'] =  upload_photo(data['base64'])
                 else:
                     data_actor['photo'] = ""
-                data_actor['email'] = data['email']
+                data_actor['email'] = BaseUserManager.normalize_email(data['email'])
                 data_actor["minutes"] = 300
 
                 serializer = ActorSerializer(data=data_actor)
@@ -417,6 +413,22 @@ def actor_create(request):
                 if serializer.is_valid():
                     # Save in db
                     serializer.save()
+
+                    current_site = get_current_site(request)
+                    mail_subject = 'Activate your Real Time account.'
+                    message = render_to_string('active_email.html', {
+                        'user': user_account.nickname,
+                        'domain': current_site.domain,
+                        'uid': urlsafe_base64_encode(force_bytes(user_account.pk)).decode(),
+                        'token': account_activation_token.make_token(user_account),
+                    })
+
+                    email = EmailMessage(
+                        mail_subject, message, to=[data_actor['email']]
+                    )
+                    email.send()
+
+
                     return JSONResponse(serializer.data, status=201)
                 response_data_save["details"] = serializer.errors
                 if 'base64' in data and data_actor['photo'] != "":
@@ -599,3 +611,19 @@ def pruned_serializer_credit_card_create(data):
     data['isDelete'] = False
     return data
 
+
+def activate(request, uidb64, token):
+    try:
+        uid = force_text(urlsafe_base64_decode(uidb64))
+        userAccount = UserAccount.objects.get(pk=uid)
+    except(TypeError, ValueError, OverflowError, UserAccount.DoesNotExist):
+        userAccount = None
+    if userAccount is not None and account_activation_token.check_token(userAccount, token):
+        userAccount.active = True
+        userAccount.save()
+        message = 'Thank you for your email confirmation. Now you can login your account.'
+
+    else:
+        message = 'Activation link is invalid!'
+
+    return render(request, 'account_confirmation.html', {'message': message, "url": "https://soundgo-v3.herokuapp.com"})
