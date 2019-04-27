@@ -1,12 +1,13 @@
+from accounts.models import Actor
+from accounts.views import login
+from django.db import transaction
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
+
 from .models import Site
-from accounts.models import Actor
 from .serializers import SiteSerializer
-from django.db import transaction
-from accounts.views import login
 
 
 class JSONResponse(HttpResponse):
@@ -22,8 +23,39 @@ class JSONResponse(HttpResponse):
 
 @csrf_exempt
 @transaction.atomic
-def site_create(request):
+def get_all_sites(request):
+    response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
+    response_sites_get = {"error": "GET_SITES", "details": "There was an error to get all sites"}
 
+    if request.method == 'GET':
+
+        try:
+
+            sites = Site.objects.all()
+            data_auxs = []
+
+            for site in sites:
+                serializer = SiteSerializer(site)
+                data_aux = serializer.data
+                data_aux.pop("actor")
+                data_aux["name_actor"] = site.actor.user_account.nickname
+                data_aux["photo"] = site.actor.photo
+                data_auxs.append(data_aux)
+
+        except Exception or ValueError or KeyError as e:
+            response_sites_get["details"] = str(e)
+            return JSONResponse(response_sites_get, status=400)
+
+        return JSONResponse(data_auxs)
+
+    else:
+        return JSONResponse(response_data_not_method,
+                            status=400)
+
+
+@csrf_exempt
+@transaction.atomic
+def site_create(request):
     response_data_save = {"error": "SAVE_SITE", "details": "There was an error to save the site"}
     response_data_not_method = {"error": "INCORRECT_METHOD", "details": "The method is incorrect"}
     response_actor_not_credit_card = {"error": "ACTOR_NOT_CREDIT_CARD",
