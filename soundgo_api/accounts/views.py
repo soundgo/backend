@@ -415,7 +415,7 @@ def actor_create(request):
                     serializer.save()
 
                     current_site = get_current_site(request)
-                    mail_subject = 'Activate your Real Time account.'
+                    mail_subject = 'Activate your SoundGo account.'
                     message = render_to_string('active_email.html', {
                         'user': user_account.nickname,
                         'domain': current_site.domain,
