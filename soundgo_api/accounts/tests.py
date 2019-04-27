@@ -2,18 +2,27 @@ from django.test import TestCase
 
 from managers.cloudinary_manager import upload_photo, remove_photo
 
-import requests
 import json
-from accounts.models import Actor, CreditCard
+from . import views
+from accounts.views import get_token
+from configuration.models import Configuration
+from accounts.models import  Actor, CreditCard
+from rest_framework.test import APIRequestFactory
 
 
 class AccountsTest(TestCase):
 
+    def setUp(self):
+        configuration = Configuration.objects.create(maximum_radius=20000, minimum_radius=20,
+                                                     time_listen_advertisement=3.0, minimum_reports_ban=10,
+                                                     time_extend_audio=3600)
+        configuration.save()
 
 
-    def get_host(self):
-        #return "http://127.0.0.1:8000"
-        return "https://soundgo-api-v3.herokuapp.com"
+    def tearDown(self):
+        Configuration.objects.all().delete()
+        Actor.objects.all().delete()
+        CreditCard.objects.all().delete()
 
     """
     Test for the Cloudinary functions used in the Accounts module.
@@ -108,6 +117,10 @@ class AccountsTest(TestCase):
 
         #Create account
         account= self.create_account({"nickname": "manolo345", "password": "ventana76", "email": "manolo@gmail.com"}, 201)
+
+        actor = Actor.objects.get(pk=account['id'])
+        actor.user_account.active = True
+        actor.user_account.save()
 
         #Update account
         self.update_account({"nickname": "manolo346", "password": "ventana76"}, 200, "manolo345", "ventana76", True)
@@ -206,73 +219,89 @@ class AccountsTest(TestCase):
     #Auxiliary methods
     def create_account(self, object, code):
 
-        headers = {'content-type': 'application/json'}
         body = json.dumps(object)
 
-        r = requests.post(self.get_host() + '/accounts/actor/', data=body, headers=headers)
+        factory = APIRequestFactory()
 
+        request = factory.post('/actor/', body, content_type='application/json')
 
-        self.assertTrue(r.status_code == code)
+        response = views.actor_create(request)
 
-        return r.json()
+        self.assertTrue(response.status_code == code)
 
+        return json.loads(response.getvalue().decode())
 
     def update_account(self, object, code, username, password, useToken):
+
+        body = json.dumps(object)
+
+        factory = APIRequestFactory()
 
         if useToken:
             token = self.get_token(username,password)
 
-            headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+            request = factory.put('/actor/'+str(username)+"/", body, content_type='application/json',
+                                   HTTP_AUTHORIZATION='Bearer ' + token)
+
+            response = views.actor_get_update_delete(request,username)
+
         else:
-            headers = {'content-type': 'application/json'}
 
-        body = json.dumps(object)
+            request = factory.put('/actor/' + str(username) + "/", body, content_type='application/json')
 
-        r = requests.put(self.get_host() + '/accounts/actor/'+str(username)+"/", data=body, headers=headers)
+            response = views.actor_get_update_delete(request, username)
 
+        self.assertTrue(response.status_code == code)
 
-
-        self.assertTrue(r.status_code == code)
-
-
-        return r.json()
-
+        return json.loads(response.getvalue().decode())
 
     def delete_account(self, code, username, password, useToken):
+        factory = APIRequestFactory()
 
         if useToken:
             token = self.get_token(username, password)
 
-            headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+            request = factory.delete('/actor/' + str(username) + "/", content_type='application/json',
+                                  HTTP_AUTHORIZATION='Bearer ' + token)
+
+            response = views.actor_get_update_delete(request, username)
+
         else:
-            headers = {'content-type': 'application/json'}
 
-        r = requests.delete(self.get_host() + '/accounts/actor/'+str(username)+"/", headers=headers)
+            request = factory.delete('/actor/' + str(username) + "/", content_type='application/json')
 
+            response = views.actor_get_update_delete(request, username)
 
-        self.assertTrue(r.status_code == code)
-
+        self.assertTrue(response.status_code == code)
 
     def get_account(self, code, username, password, useToken):
+        factory = APIRequestFactory()
 
         if useToken:
             token = self.get_token(username, password)
 
-            headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+            request = factory.get('/actor/' + str(username) + "/", content_type='application/json',
+                                     HTTP_AUTHORIZATION='Bearer ' + token)
+
+            response = views.actor_get_update_delete(request, username)
+
         else:
-            headers = {'content-type': 'application/json'}
 
-        r = requests.get(self.get_host() + '/accounts/actor/' + str(username) + "/", headers=headers)
+            request = factory.get('/actor/' + str(username) + "/", content_type='application/json')
 
+            response = views.actor_get_update_delete(request, username)
 
-        self.assertTrue(r.status_code == code)
-
+        self.assertTrue(response.status_code == code)
 
     # Test cases
     def test_crud_credit_card(self):
 
         account = self.create_account({"nickname": "manolo345", "password": "ventana76", "email": "manolo@gmail.com"},
                                       201)
+
+        actor = Actor.objects.get(pk=account['id'])
+        actor.user_account.active = True
+        actor.user_account.save()
 
         # Create credit card
         creditCard = self.create_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Efrain Smith", "expirationMonth": 12, "expirationYear":22, "cvvCode":277},
@@ -297,58 +326,56 @@ class AccountsTest(TestCase):
 
     def get_credit_card(self, code, username, password, id):
 
-
         token = self.get_token(username, password)
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.get(self.get_host() + '/accounts/creditcard/' + str(id) + "/", headers=headers)
+        request = factory.get('/creditcard/' + str(id) + "/", content_type='application/json', HTTP_AUTHORIZATION='Bearer ' + token)
 
+        response = views.creditcard_update_get(request,id)
 
-        self.assertTrue(r.status_code == code)
-
+        self.assertTrue(response.status_code == code)
 
     def create_credit_card(self, object, code, username, password):
 
         token = self.get_token(username, password)
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
         body = json.dumps(object)
 
-        r = requests.post(self.get_host() + '/accounts/creditcard/', data=body, headers=headers)
+        factory = APIRequestFactory()
 
+        request = factory.post('/creditcard/', body, content_type='application/json', HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = views.creditcard_create(request)
 
-        return r.json()
+        self.assertTrue(response.status_code == code)
 
+        return json.loads(response.getvalue().decode())
 
     def update_credit_card(self, object, code, username, password, id):
 
-
         token = self.get_token(username,password)
-
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
-
 
         body = json.dumps(object)
 
-        r = requests.put(self.get_host() + '/accounts/creditcard/'+str(id)+"/", data=body, headers=headers)
+        factory = APIRequestFactory()
 
+        request = factory.put('/creditcard/' + str(id) + "/", body, content_type='application/json',
+                               HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = views.creditcard_update_get(request,id)
 
+        self.assertTrue(response.status_code == code)
 
-        return r.json()
-
-
-
+        return json.loads(response.getvalue().decode())
 
     def get_token(self, username, password):
-        headers = {'content-type': 'application/json'}
         body = json.dumps({"nickname": username, "password": password})
 
-        r = requests.post(self.get_host() + '/api-token-auth/', data=body, headers=headers)
+        factory = APIRequestFactory()
+        request = factory.post('/api-token-auth/', body, content_type='application/json')
+        response = get_token(request)
 
-        return r.json()['token']
+        r = json.loads(response.getvalue().decode())
+        return r['token']
 

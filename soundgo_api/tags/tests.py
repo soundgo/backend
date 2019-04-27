@@ -1,25 +1,41 @@
 from django.test import TestCase
-import requests
 
-# Create your tests here.
+from rest_framework.test import APIRequestFactory
+
+import ast
+
+from .models import Tag
+from .views import get_all_tags
 
 
 class TagTest(TestCase):
 
-    def get_host(self):
-        #return "http://127.0.0.1:8000"
-        return "https://soundgo-api-v3.herokuapp.com"
+    # Tests set up and tear down
+    def setUp(self):
+
+        tag1 = Tag.objects.create(name='Exam')
+        tag1.save()
+
+        tag2 = Tag.objects.create(name='Party')
+        tag2.save()
+
+    def tearDown(self):
+        Tag.objects.all().delete()
 
     # Test cases
-    def test_get_tag(self):
+    def test_get_tags(self):
 
-        # Get configuration
-        self.get_tag(200)
+        self.get_tags(200)
 
-    def get_tag(self, code):
+    # Auxiliary methods
+    def get_tags(self, code):
 
-        headers = {'content-type': 'application/json'}
+        factory = APIRequestFactory()
 
-        r = requests.get(self.get_host() + '/tags/', headers=headers)
+        request = factory.get('/tags/', content_type='application/json')
 
-        self.assertTrue(r.status_code == code)
+        response = get_all_tags(request)
+        response_value = ast.literal_eval(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+        self.assertTrue(len(response_value) == 2)

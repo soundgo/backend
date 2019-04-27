@@ -1,8 +1,22 @@
 from django.test import TestCase
+
+from rest_framework.test import APIRequestFactory
+
 import json
-import requests
+
+from records.models import Category
+from configuration.models import Configuration
+
+from accounts.models import UserAccount, Actor, CreditCard
+from accounts.views import get_token
+
+from .views import (audio_create, audio_delete_get_update, audio_site_category_get, audio_listen, report_create,
+                    like_create, advertisement_create, advertisement_update_get, advertisement_listen,
+                    audio_site_create)
+
+from sites.views import site_update_delete_get, site_create
+
 from managers.cloudinary_manager import upload_record, get_record_duration, remove_record
-from .models import Advertisement, Reproduction
 
 
 class CloudinaryTest(TestCase):
@@ -477,28 +491,55 @@ class CloudinaryTest(TestCase):
                   "moxrYbKeY8BJsnrRY89KMmG12IoUvs3b7eanpycFiVHdouYWg8lsNmt1FS+33+9zIiFVOq5jbU9nZ1MABYA2AQAAAAAAg0MAAAkA"
                   "AACfd/skAWoWAKqz3++H+/T0pGA6hrVD9XUrrc4zc3Nzc/r9sOZyIGq6bDnpYwKensDQ9y/K37+cAFtbW3TudhWOtwZzlstb/X5/"
                   "a6vf72/x5+fm5nB6slBlZ3Fcha363d5ut7u3ni1rLoPf728l3KcK")
+
         return record
 
     def test_upload_duration_and_remove_record(self):
-
         url = upload_record(self.get_record())
-
-        self.assertFalse(url == "")
+        self.assertTrue(url != "")
 
         duration = get_record_duration(url)
-
         self.assertTrue(duration == 1)
 
         res = remove_record(url)
-
         self.assertTrue(res)
 
 
 class RecordsTest(TestCase):
 
-    def get_host(self):
-        #return "http://127.0.0.1:8000"
-        return "https://soundgo-api-v3.herokuapp.com"
+    # Tests set up and tear down
+    def setUp(self):
+
+        category1 = Category.objects.create(name='Leisure', maxTimeRecord=60, minDurationMap=259200)
+        category1.save()
+
+        category2 = Category.objects.create(name='Experience', maxTimeRecord=60, minDurationMap=259200)
+        category2.save()
+
+        category3 = Category.objects.create(name='Tourism', maxTimeRecord=60, minDurationMap=259200)
+        category3.save()
+
+        config = Configuration.objects.create(maximum_radius=20000, minimum_radius=20, time_listen_advertisement=3,
+                                              minimum_reports_ban=10, time_extend_audio=3600)
+        config.save()
+
+        user_account_us = UserAccount.objects.create_user_account('manuel', 'Manuel123.', is_active=True)
+        actor_us = Actor.objects.create(user_account=user_account_us, email='soundgoapp3@gmail.com')
+        actor_us.save()
+
+        credit_card = CreditCard.objects.create(holderName='Carlos', brandName='MASTERCARD',
+                                                number='5364212315362996', expirationMonth=7, expirationYear=21,
+                                                cvvCode=841, isDelete=False)
+        user_account_ad = UserAccount.objects.create_user_account('carlos', 'Carlos123.', is_active=True)
+        actor_ad = Actor.objects.create(user_account=user_account_ad, email='soundgoapp2@gmail.com',
+                                        credit_card=credit_card)
+        actor_ad.save()
+
+    def tearDown(self):
+
+        Category.objects.all().delete()
+        Configuration.objects.all().delete()
+        UserAccount.objects.all().delete()
 
     # Test cases
     def test_crud_advertisement(self):
@@ -524,7 +565,6 @@ class RecordsTest(TestCase):
         # Update listen advertisement
         self.update_listen_advertisement(200, advertisement['id'])
 
-    # Test cases
     def test_crud_audio(self):
         # Create site
         base64Value = CloudinaryTest.get_record(self)
@@ -568,8 +608,6 @@ class RecordsTest(TestCase):
         # Delete site
         self.delete_site(204, site['id'])
 
-    #########
-
     def test_audios_site(self):
         # Create site
         site = self.create_site(
@@ -585,9 +623,6 @@ class RecordsTest(TestCase):
         # Get audios to a deleted site
         self.get_audio_sites(404, site['id'])
 
-    #########
-
-    # Test cases
     def test_like_report_listen_audio(self):
         # Create site
         base64Value = CloudinaryTest.get_record(self)
@@ -616,160 +651,242 @@ class RecordsTest(TestCase):
         # Listen in audio deleted
         self.audio_listen(404, audio['id'])
 
-    #########
-
     # Auxiliary methods
     def create_site(self, object, code):
 
         token = self.get_token("carlos", "Carlos123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
         body = json.dumps(object)
 
-        r = requests.post(self.get_host() + '/sites/site/', data=body, headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.post('/site/', body,  content_type='application/json',
+                               HTTP_AUTHORIZATION='Bearer ' + token)
 
-        return r.json()
+        response = site_create(request)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def create_audio(self, object, code, site_id=None):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
         body = json.dumps(object)
-        if site_id == None:
-            r = requests.post(self.get_host() + '/records/audio/', data=body, headers=headers)
+
+        factory = APIRequestFactory()
+
+        if site_id is None:
+            request = factory.post('/audio/', body, content_type='application/json',
+                                   HTTP_AUTHORIZATION='Bearer ' + token)
+            response = audio_create(request)
         else:
-            r = requests.post(self.get_host() + '/records/audio/site/' + str(site_id) + "/", data=body,
-                              headers=headers)
+            request = factory.post('/audio/site/' + str(site_id) + "/", body, content_type='application/json',
+                                   HTTP_AUTHORIZATION='Bearer ' + token)
+            response = audio_site_create(request, site_id)
 
-        self.assertTrue(r.status_code == code)
+        response_value = json.loads(response.getvalue().decode())
 
-        return r.json()
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def update_audio(self, object, code, id):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
         body = json.dumps(object)
 
-        r = requests.put(self.get_host() + '/records/audio/' + str(id) + "/", data=body, headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.put('/audio/' + str(id) + "/", body,  content_type='application/json',
+                              HTTP_AUTHORIZATION='Bearer ' + token)
 
-        return r.json()
+        response = audio_delete_get_update(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def delete_audio(self, code, id):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.delete(self.get_host() + '/records/audio/' + str(id) + "/", headers=headers)
+        request = factory.delete('/audio/' + str(id) + "/",  content_type='application/json',
+                                 HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = audio_delete_get_update(request, id)
+        response_body = response.getvalue().decode()
+
+        self.assertTrue(response.status_code == code)
 
     def get_audio(self, code, id):
-        headers = {'content-type': 'application/json'}
 
-        r = requests.get(self.get_host() + '/records/audio/' + str(id) + "/", headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.get('/audio/' + str(id) + "/",  content_type='application/json')
+
+        response = audio_delete_get_update(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def get_audio_sites(self, code, id):
-        headers = {'content-type': 'application/json'}
 
-        r = requests.get(self.get_host() + '/records/audio/site/categories/' + str(id) + "/?categories=Leisure",
-                         headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.get('/audio/site/categories/' + str(id) + "/?categories=Leisure",
+                              content_type='application/json')
+
+        response = audio_site_category_get(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def delete_site(self, code, id):
 
         token = self.get_token("carlos", "Carlos123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.delete(self.get_host() + '/sites/site/' + str(id) + "/", headers=headers)
+        request = factory.delete('/sites/site/' + str(id) + "/", content_type='application/json',
+                                 HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = site_update_delete_get(request, id)
+        response_body = response.getvalue().decode()
 
-    # Auxiliary methods
+        self.assertTrue(response.status_code == code)
+        self.assertTrue(response_body == "")
+
     def create_like(self, code, id):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.post(self.get_host() + '/records/audio/like/' + str(id) + '/', headers=headers)
+        request = factory.post('/audio/like/' + str(id) + '/', content_type='application/json',
+                               HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = like_create(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def create_report(self, code, id):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.post(self.get_host() + '/records/audio/report/' + str(id) + '/', headers=headers)
+        request = factory.post('/audio/report/' + str(id) + '/', content_type='application/json',
+                               HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = report_create(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def audio_listen(self, code, id):
+
         token = self.get_token("manuel", "Manuel123.")
 
-        headers = {'content-type': 'application/json', 'Authorization': "Bearer " + token}
+        factory = APIRequestFactory()
 
-        r = requests.put(self.get_host() + '/records/audio/listen/' + str(id) + "/", headers=headers)
+        request = factory.put('/audio/listen/' + str(id) + "/", content_type='application/json',
+                              HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = audio_listen(request, id)
 
-    # Auxiliary methods
+        self.assertTrue(response.status_code == code)
+
     def create_advertisement(self, object, code):
 
         token = self.get_token("carlos", "Carlos123.")
 
-        headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
         body = json.dumps(object)
 
-        r = requests.post(self.get_host() + '/records/advertisement/', data=body, headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.post('/advertisement/', body, content_type='application/json',
+                               HTTP_AUTHORIZATION='Bearer ' + token)
 
-        return r.json()
+        response = advertisement_create(request)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def update_advertisement(self, object, code, id):
 
         token = self.get_token("carlos", "Carlos123.")
 
-        headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
         body = json.dumps(object)
 
-        r = requests.put(self.get_host() + '/records/advertisement/'+str(id)+"/", data=body, headers=headers)
+        factory = APIRequestFactory()
 
-        self.assertTrue(r.status_code == code)
+        request = factory.put('/advertisement/' + str(id) + '/', body, content_type='application/json',
+                              HTTP_AUTHORIZATION='Bearer ' + token)
 
-        return r.json()
+        response = advertisement_update_get(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def update_listen_advertisement(self, code, id):
 
         token = self.get_token("carlos", "Carlos123.")
 
-        headers = {'content-type': 'application/json', 'Authorization' : "Bearer "+token}
+        factory = APIRequestFactory()
 
-        r = requests.put(self.get_host() + '/records/advertisement/listen/'+str(id)+"/", headers=headers)
+        request = factory.put('/advertisement/listen/' + str(id) + '/', content_type='application/json',
+                              HTTP_AUTHORIZATION='Bearer ' + token)
 
-        self.assertTrue(r.status_code == code)
+        response = advertisement_listen(request, id)
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def get_advertisement(self, code, id):
 
-        headers = {'content-type': 'application/json'}
+        factory = APIRequestFactory()
 
-        r = requests.get(self.get_host() + '/records/advertisement/' + str(id) + "/", headers=headers)
+        request = factory.get('/advertisement/' + str(id) + "/", content_type='application/json')
 
-        self.assertTrue(r.status_code == code)
+        response = advertisement_update_get(request, id)
+
+        response_value = json.loads(response.getvalue().decode())
+
+        self.assertTrue(response_value is not None)
+        self.assertTrue(response.status_code == code)
+
+        return response_value
 
     def get_token(self, username, password):
-        headers = {'content-type': 'application/json'}
-        body = json.dumps({"nickname": username, "password": password})
 
-        r = requests.post(self.get_host() + '/api-token-auth/', data=body, headers=headers)
+        factory = APIRequestFactory()
 
-        return r.json()['token']
+        request = factory.post('/api-token-auth/', json.dumps({"nickname": username, "password": password}),
+                               content_type='application/json')
+
+        response = get_token(request)
+        response_value = json.loads(response.getvalue().decode())
+
+        return response_value['token']
