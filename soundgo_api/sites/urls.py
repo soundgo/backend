@@ -18,6 +18,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('', views.get_all_sites),
     path('site/', views.site_create),
     path('site/<int:site_id>/', views.site_update_delete_get),
 ]
