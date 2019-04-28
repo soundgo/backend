@@ -15,7 +15,7 @@
 language: python
 
 python:
-  - 3.6
+  - "3.6"
 
 sudo: required
 dist: trusty
@@ -39,7 +39,7 @@ before_script:
 script:
   - python3 ./soundgo_api/manage.py makemigrations
   - python3 ./soundgo_api/manage.py migrate
-  - coverage run ./soundgo_api/manage.py test ./soundgo_api
+  - coverage run --source=soundgo_api/accounts,soundgo_api/configuration,soundgo_api/managers,soundgo_api/records,soundgo_api/sites,soundgo_api/soundgo_api,soundgo_api/tags ./soundgo_api/manage.py test ./soundgo_api
   - if [[ $TRAVIS_BRANCH == $BRANCH_TRAVIS ]] && [[ $RELEASE_TRAVIS == "1" ]]; then git archive --format zip --output ./$ZIP_TRAVIS.zip $BRANCH_TRAVIS; echo "Source code generated properly."; fi
 
 after_success:
