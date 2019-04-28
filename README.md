@@ -1,4 +1,4 @@
-## Welcome to the SoundGo backend repository!
+## Welcome to the SoundGo backend repository! [![Build Status](https://travis-ci.org/soundgo/backend.svg?branch=master)](https://travis-ci.org/soundgo/backend) [![Coverage Status](https://coveralls.io/repos/github/soundgo/backend/badge.svg?branch=master)](https://coveralls.io/github/soundgo/backend?branch=master)
 
 This repository contains the code of the SoundGo backend.
 
