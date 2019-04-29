@@ -26,7 +26,6 @@ from .tokens import account_activation_token
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
-from django.contrib.auth.models import BaseUserManager
 
 
 class JSONResponse(HttpResponse):
@@ -405,7 +404,7 @@ def actor_create(request):
                     data_actor['photo'] =  upload_photo(data['base64'])
                 else:
                     data_actor['photo'] = ""
-                data_actor['email'] = BaseUserManager.normalize_email(data['email'])
+                data_actor['email'] = data['email'].lower()
                 data_actor["minutes"] = 300
 
                 serializer = ActorSerializer(data=data_actor)
