@@ -337,6 +337,17 @@ def audio_delete_get_update(request, audio_id):
                     if actor_aux.id != audio.actor.id:
                         return JSONResponse(response_audio_not_belong, status=400)
 
+                # Delete tags
+                audioTags = [tag.name for tag in audio.tags.all()]
+
+                for tagName in audioTags:
+                    # If the tag never used delete of the system
+                    audios = Audio.objects.all().filter(tags__name=tagName).all()
+
+                    if len(audios) == 1:
+                        tag = Tag.objects.all().filter(name = tagName).all()
+                        tag[0].delete()
+
                 audio.delete()
 
         except Exception or KeyError or ValueError as e:
