@@ -116,14 +116,14 @@ class AccountsTest(TestCase):
     def test_crud_account(self):
 
         #Create account
-        account= self.create_account({"nickname": "manolo345", "password": "ventana76", "email": "manolo@gmail.com"}, 201)
+        account= self.create_account({"nickname": "manolo345", "password": "ventana76N.", "email": "manolo@gmail.com"}, 201)
 
         actor = Actor.objects.get(pk=account['id'])
         actor.user_account.active = True
         actor.user_account.save()
 
         #Update account
-        self.update_account({"nickname": "manolo346", "password": "ventana76"}, 200, "manolo345", "ventana76", True)
+        self.update_account({"nickname": "manolo346", "password": "ventana76N."}, 200, "manolo345", "ventana76N.", True)
 
         self.update_account({"base64": "data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAABQAAD/"
                  "7gAmQWRvYmUAZMAAAAABAwAVBAMGCg0AAAZfAAAJVwAADj0AABIN/9sAhAACAgICAgICAgICAwICAgMEAwICAwQ"
@@ -196,22 +196,22 @@ class AccountsTest(TestCase):
                  "VWgb4cOJ8khU4gpzfMpZHDRJruNk1MQOUcstIvZtuQ9N6HstdXOxWZskY2ioSz/ANj0ki7/AKyEHLFMJzIZMkkg"
                  "4FDjNtip4lUo5ExHwAQt8RBjjotYERel7n886ks0OdGAOJn5ei8Iuy0yTvMXtnUajW3rHhDw6BkhqrAVXEq8hHS"
                  "eHic6iZYhREsmLQ0IaIo8L9blsJ2n/GZ9XqS8Nj4fXy/7DbZ/7V+X8vo//9oACAECAwE/EP8AWk//2gAIAQMDAT"
-                 "8Q/wBaT//Z"}, 200, "manolo346", "ventana76", True)
+                 "8Q/wBaT//Z"}, 200, "manolo346", "ventana76N.", True)
 
         #Get account
-        self.get_account(200, "manolo346", "ventana76", True)
+        self.get_account(200, "manolo346", "ventana76N.", True)
 
         #Delete account
-        self.delete_account(204, "manolo346", "ventana76", True)
+        self.delete_account(204, "manolo346", "ventana76N.", True)
 
         #account deleted can not get again
-        self.get_account(400, "manolo346", "ventana76", False)
+        self.get_account(400, "manolo346", "ventana76N.", False)
 
         #account deleted can not delete again
-        self.delete_account(400, "manolo346", "ventana76", False)
+        self.delete_account(400, "manolo346", "ventana76N.", False)
 
         #account deleted can not update again
-        self.update_account({"nickname": "manolo346", "password": "ventana76"}, 400, "manolo346", "ventana76", False)
+        self.update_account({"nickname": "manolo346", "password": "ventana76N."}, 400, "manolo346", "ventana76N.", False)
 
     #########
 
@@ -296,7 +296,7 @@ class AccountsTest(TestCase):
     # Test cases
     def test_crud_credit_card(self):
 
-        account = self.create_account({"nickname": "manolo345", "password": "ventana76", "email": "manolo@gmail.com"},
+        account = self.create_account({"nickname": "manolo345", "password": "ventana76N.", "email": "manolo@gmail.com"},
                                       201)
 
         actor = Actor.objects.get(pk=account['id'])
@@ -305,24 +305,24 @@ class AccountsTest(TestCase):
 
         # Create credit card
         creditCard = self.create_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Efrain Smith", "expirationMonth": 12, "expirationYear":22, "cvvCode":277},
-                                      201, "manolo345", "ventana76")
+                                      201, "manolo345", "ventana76N.")
 
         # Update credit card
-        self.update_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Carlos Mallado", "expirationMonth": 12, "expirationYear":22, "cvvCode":277}, 200, "manolo345", "ventana76", creditCard['id'])
+        self.update_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Carlos Mallado", "expirationMonth": 12, "expirationYear":22, "cvvCode":277}, 200, "manolo345", "ventana76N.", creditCard['id'])
 
         # Get credit_card
-        self.get_credit_card(200, "manolo345", "ventana76", creditCard['id'])
+        self.get_credit_card(200, "manolo345", "ventana76N.", creditCard['id'])
 
         # Update credit card
-        self.update_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Efrain Smith", "expirationMonth": 12, "expirationYear":22, "cvvCode":277, "isDelete": True}, 200, "manolo345", "ventana76", creditCard['id'])
+        self.update_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Efrain Smith", "expirationMonth": 12, "expirationYear":22, "cvvCode":277, "isDelete": True}, 200, "manolo345", "ventana76N.", creditCard['id'])
 
 
         # credit_card deleted can not update again
         self.update_credit_card({"number": "4194196013034073", "brandName": "unknown", "holderName": "Carlos Mallado",
-                                 "expirationMonth": 12, "expirationYear": 22, "cvvCode": 277}, 200, "manolo345", "ventana76", creditCard['id'])
+                                 "expirationMonth": 12, "expirationYear": 22, "cvvCode": 277}, 200, "manolo345", "ventana76N.", creditCard['id'])
 
         # Delete account
-        self.delete_account(204, "manolo345", "ventana76", True)
+        self.delete_account(204, "manolo345", "ventana76N.", True)
 
     def get_credit_card(self, code, username, password, id):
 
