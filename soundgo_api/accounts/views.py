@@ -26,6 +26,7 @@ from .tokens import account_activation_token
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+import re
 
 
 class JSONResponse(HttpResponse):
@@ -396,6 +397,11 @@ def actor_create(request):
                 data = JSONParser().parse(request)
                 data_actor = {}
 
+                pass_regex = re.compile('(?=^.{8,255}$)(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^*()_+}{:;\'?/&.&,])(?!.*\\s).*$')
+
+                if not pass_regex.match(data["password"]):
+                    raise Exception("The password does not enough strong")
+
                 UserAccount = get_user_model()
                 user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
@@ -407,7 +413,10 @@ def actor_create(request):
                 data_actor['email'] = data['email'].lower()
                 data_actor["minutes"] = 300
 
+
+
                 serializer = ActorSerializer(data=data_actor)
+
 
                 if serializer.is_valid():
                     # Save in db
