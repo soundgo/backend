@@ -206,7 +206,9 @@ def actor_get_update_delete(request, nickname):
                                             status=400)
 
                 # Check nickname
+
                 if data.get('nickname') != None:
+                    data['nickname'] = data.get('nickname').strip()
                     if len(UserAccount.objects.filter(
                             nickname=data.get('nickname')).all()) != 0 and actor.user_account.nickname != data.get('nickname'):
                         return JSONResponse({"error": "NICKNAME_USED",
@@ -402,6 +404,7 @@ def actor_create(request):
                 if not pass_regex.match(data["password"]):
                     raise Exception("The password does not enough strong")
 
+                data['nickname'] = data['nickname'].strip()
                 UserAccount = get_user_model()
                 user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
