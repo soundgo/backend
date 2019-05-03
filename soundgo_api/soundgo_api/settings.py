@@ -147,6 +147,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'soundgo_api.wsgi.application'
 
+# Redirect HTTP requests to HTTPS
+SECURE_SSL_REDIRECT = True
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
