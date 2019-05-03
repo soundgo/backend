@@ -17,7 +17,7 @@ import datetime
 scheduler = BlockingScheduler()
 
 
-@scheduler.scheduled_job('cron', id='charge_advertisements_job_id', day='last', hour=0)
+@scheduler.scheduled_job('interval', id='charge_advertisements_job_id', minutes=1)
 def charge_advertisements_job():
 
     """
