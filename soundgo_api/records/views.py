@@ -481,7 +481,8 @@ def audio_site_create(request, site_id):
                         return JSONResponse(response_data_save, status=400)
 
                 # Ver si cumple los tiempos
-                duration = get_record_duration(data['path'])
+                duration = data['duration']
+
                 if actor.minutes < duration:
                     remove_record(data['path'])
                     return JSONResponse(response_data_not_minutes, status=400)
@@ -673,6 +674,11 @@ def pruned_serializer_advertisement_create(data):
     data["isActive"] = True
     data["isDelete"] = False
     data["duration"] = get_record_duration(data["path"])
+    if data["duration"] == 0:
+        data["duration"] = 1
+    if data["duration"] > 60:
+        data["duration"] = 60
+
     return data
 
 
@@ -685,6 +691,10 @@ def pruned_serializer_audio_create(data):
     data["numberReproductions"] = 0
     data['category'] = get_object_or_404(Category, name=data['category']).pk
     data["duration"] = get_record_duration(data["path"])
+    if data["duration"] == 0:
+        data["duration"] = 1
+    if data["duration"] > 60:
+        data["duration"] = 60
     return data
 
 
@@ -699,6 +709,11 @@ def pruned_serializer_audio_create_site(data, site_id):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data["duration"] = get_record_duration(data["path"])
+    if data["duration"] == 0:
+        data["duration"] = 1
+
+    if data["duration"] > 60:
+        data["duration"] = 60
     data['category'] = get_object_or_404(Category, name=data['category']).pk
     return data
 
