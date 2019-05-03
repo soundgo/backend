@@ -27,7 +27,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 import re
-
+from sites.models import Site
 
 class JSONResponse(HttpResponse):
     """
@@ -606,6 +606,11 @@ def creditcard_update_get(request, creditcard_id):
                                     return JSONResponse(response_data_put, status=400)
                                 # Remove advertisement from Firebase Cloud Firestore
                                 remove_advertisement(ad)
+
+                        sites = Site.objects.filter(actor = actor.id)
+                        for site in sites:
+                            site.delete()
+
                     return JSONResponse(serializer.data, status=200)
                 response_creditcard_put["details"] = serializer.errors
                 return JSONResponse(response_creditcard_put, status=400)
