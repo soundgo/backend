@@ -37,5 +37,6 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Audio, AudioAdmin)
-admin.site.register(Advertisement, AdvertisementAdmin)
+admin.site.register(Advertisement)
+admin.site.register(Reproduction)
 admin.site.register(Category, CategoryAdmin)
