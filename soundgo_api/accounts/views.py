@@ -26,8 +26,8 @@ from .tokens import account_activation_token
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
-from django.contrib.auth.models import BaseUserManager
-
+import re
+from sites.models import Site
 
 class JSONResponse(HttpResponse):
     """
@@ -206,7 +206,9 @@ def actor_get_update_delete(request, nickname):
                                             status=400)
 
                 # Check nickname
+
                 if data.get('nickname') != None:
+                    data['nickname'] = data.get('nickname').strip()
                     if len(UserAccount.objects.filter(
                             nickname=data.get('nickname')).all()) != 0 and actor.user_account.nickname != data.get('nickname'):
                         return JSONResponse({"error": "NICKNAME_USED",
@@ -397,6 +399,12 @@ def actor_create(request):
                 data = JSONParser().parse(request)
                 data_actor = {}
 
+                pass_regex = re.compile('(?=^.{8,255}$)(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^*()_+}{:;\'?/&.&,])(?!.*\\s).*$')
+
+                if not pass_regex.match(data["password"]):
+                    raise Exception("The password does not enough strong")
+
+                data['nickname'] = data['nickname'].strip()
                 UserAccount = get_user_model()
                 user_account = UserAccount.objects.create_user_account(data["nickname"], data["password"])
 
@@ -405,10 +413,13 @@ def actor_create(request):
                     data_actor['photo'] =  upload_photo(data['base64'])
                 else:
                     data_actor['photo'] = ""
-                data_actor['email'] = BaseUserManager.normalize_email(data['email'])
+                data_actor['email'] = data['email'].lower()
                 data_actor["minutes"] = 300
 
+
+
                 serializer = ActorSerializer(data=data_actor)
+
 
                 if serializer.is_valid():
                     # Save in db
@@ -595,6 +606,11 @@ def creditcard_update_get(request, creditcard_id):
                                     return JSONResponse(response_data_put, status=400)
                                 # Remove advertisement from Firebase Cloud Firestore
                                 remove_advertisement(ad)
+
+                        sites = Site.objects.filter(actor = actor.id)
+                        for site in sites:
+                            site.delete()
+
                     return JSONResponse(serializer.data, status=200)
                 response_creditcard_put["details"] = serializer.errors
                 return JSONResponse(response_creditcard_put, status=400)

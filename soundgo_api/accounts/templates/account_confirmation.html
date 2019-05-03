@@ -42,7 +42,7 @@
       <p>{{ message }}</p>
     </div>
     <div class="modal-footer">
-      <a href="{{ url }}" class="modal-close waves-effect waves-green btn-flat">Next</a>
+      <a href="{{ url }}" class="waves-effect waves-green btn-flat">Next</a>
     </div>
   </div>
 
@@ -58,12 +58,6 @@
 
         $('.modal').modal({
               dismissible: false, // Modal can be dismissed by clicking outside of the modal
-              onOpenEnd: function(modal, trigger) { // Callback for Modal open. Modal and trigger parameters available.
-
-              },
-              onClose: function() { // Callback for Modal close
-                window.location.replace("{{ url }}");
-              }
         });
 
         $('.modal').modal('open');
