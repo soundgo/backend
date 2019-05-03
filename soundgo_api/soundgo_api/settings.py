@@ -122,9 +122,11 @@ CORS_ORIGIN_WHITELIST = (
     'soundgo-api-v1.herokuapp.com',
     'soundgo-api-v2.herokuapp.com',
     'soundgo-api-v3.herokuapp.com',
+    'soundgo-api.herokuapp.com',
     'soundgo-v1.herokuapp.com',
     'soundgo-v2.herokuapp.com',
     'soundgo-v3.herokuapp.com',
+    'soundgo.herokuapp.com',
 )
 
 ROOT_URLCONF = 'soundgo_api.urls'
