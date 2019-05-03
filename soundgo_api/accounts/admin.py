@@ -59,5 +59,5 @@ class UserAccountAdmin(BaseUserAccountAdmin):
 
 
 admin.site.register(UserAccount, UserAccountAdmin)
+admin.site.register(CreditCard)
 admin.site.unregister(Group)
-admin.site.unregister(CreditCard)
