@@ -674,8 +674,10 @@ def pruned_serializer_advertisement_create(data):
     data["isActive"] = True
     data["isDelete"] = False
     data["duration"] = get_record_duration(data["path"])
-    if data["duration"] == 0 :
+    if data["duration"] == 0:
         data["duration"] = 1
+    if data["duration"] > 60:
+        data["duration"] = 60
 
     return data
 
@@ -691,6 +693,8 @@ def pruned_serializer_audio_create(data):
     data["duration"] = get_record_duration(data["path"])
     if data["duration"] == 0:
         data["duration"] = 1
+    if data["duration"] > 60:
+        data["duration"] = 60
     return data
 
 
@@ -705,8 +709,11 @@ def pruned_serializer_audio_create_site(data, site_id):
     data['isInappropriate'] = False
     data["numberReproductions"] = 0
     data["duration"] = get_record_duration(data["path"])
-    if data["duration"] == 0 :
+    if data["duration"] == 0:
         data["duration"] = 1
+
+    if data["duration"] > 60:
+        data["duration"] = 60
     data['category'] = get_object_or_404(Category, name=data['category']).pk
     return data
 
