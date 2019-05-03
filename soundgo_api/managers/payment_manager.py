@@ -16,7 +16,7 @@ def charge(actor_id):
     for ad in advertisements:
         reproductions = len(Reproduction.objects.filter(advertisement=ad.id).filter(date__month=today.month,
                                                                                     date__year=today.year))
-        amount = amount + (reproductions * ad.duration * ad.radius/10000)
+        amount = int(amount + (reproductions * ad.duration * ad.radius/10000))
 
         if amount >= 50:
             customer = stripe.Customer.create(
@@ -39,10 +39,10 @@ def charge(actor_id):
             customer = customer.save()
 
             charge = stripe.Charge.create(
-                amount = amount,
-                currency = 'eur',
-                description = 'SoundGo advertising ' + str(datetime.now().month) + "/" + str(datetime.now().year),
-                customer = customer,
+                amount=amount,
+                currency='eur',
+                description='SoundGo advertising ' + str(datetime.now().month) + "/" + str(datetime.now().year),
+                customer=customer,
             )
             charge.save()
 
