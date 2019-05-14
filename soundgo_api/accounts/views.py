@@ -642,4 +642,4 @@ def activate(request, uidb64, token):
     else:
         message = 'Activation link is invalid!'
 
-    return render(request, 'account_confirmation.html', {'message': message, "url": "https://soundgo-v3.herokuapp.com"})
+    return render(request, 'account_confirmation.html', {'message': message, "url": "https://soundgo.herokuapp.com"})

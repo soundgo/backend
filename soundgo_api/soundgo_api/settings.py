@@ -225,6 +225,6 @@ STATIC_URL = '/static/'
 #Email
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'soundgoapp3@gmail.com'
+EMAIL_HOST_USER = 'soundgoinfo@gmail.com'
 EMAIL_HOST_PASSWORD = 'I$pp$0undg0'
 EMAIL_PORT = 587
