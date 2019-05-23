@@ -30,7 +30,7 @@ env:
 
 install:
   - pip3 install --upgrade requests
-  - pip3 install --upgrade --user urllib3==1.24.3
+  - pip3 install --upgrade urllib3==1.24.3
   - pip3 install -r requirements.txt
 
 before_script:
